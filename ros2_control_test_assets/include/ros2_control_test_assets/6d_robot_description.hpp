@@ -15,10 +15,12 @@
 #ifndef ROS2_CONTROL_TEST_ASSETS__6D_ROBOT_DESCRIPTIONS_HPP_
 #define ROS2_CONTROL_TEST_ASSETS__6D_ROBOT_DESCRIPTIONS_HPP_
 
+#include <string>
+
 namespace ros2_control_test_assets
 {
 
-const auto 6d_robot_urdf =
+const auto valid_6d_robot_urdf =
   R"(
 <?xml version="1.0" ?>
 <!-- =================================================================================== -->
