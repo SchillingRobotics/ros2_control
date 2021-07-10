@@ -72,10 +72,13 @@ ControllerManager::ControllerManager(
     throw std::runtime_error("Unable to initialize resource manager, no robot description found.");
   }
 
+  // TODO(destogl): manage this when there is an error - CM should not die because URDF is wrong...
   resource_manager_->load_urdf(robot_description);
 
+  std::vector<std::string> autostart_components = {""};
+  get_parameter("autostart_components", autostart_components);
   // TODO(all): Here we should start only "auto-start" resources
-  resource_manager_->start_components();
+  resource_manager_->start_components(autostart_components);
 
   init_services();
 }
@@ -121,6 +124,7 @@ void ControllerManager::init_services()
     std::bind(&ControllerManager::list_hardware_interfaces_srv_cb, this, _1, _2),
     rmw_qos_profile_services_default,
     best_effort_callback_group_);
+  // TODO(destogl): list hardware components with their status
   load_controller_service_ = create_service<controller_manager_msgs::srv::LoadController>(
     "~/load_controller",
     std::bind(&ControllerManager::load_controller_service_cb, this, _1, _2),
