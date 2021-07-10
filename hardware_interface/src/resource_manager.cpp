@@ -52,10 +52,12 @@ public:
   }
 
   template <class HardwareT, class HardwareInterfaceT>
-  void initialize_hardware(
+  void load_hardware(
     const HardwareInfo & hardware_info, pluginlib::ClassLoader<HardwareInterfaceT> & loader,
     std::vector<HardwareT> & container)
   {
+    RCUTILS_LOG_INFO_NAMED(
+      "resource_manager", "Loading hardware '%s' ", hardware_info.name.c_str());
     // hardware_class_type has to match class name in plugin xml description
     // TODO(karsten1987) extract package from hardware_class_type
     // e.g.: <package_vendor>/<system_type>
@@ -65,6 +67,32 @@ public:
     container.emplace_back(std::move(hardware));
     hardware_status_map_.emplace(
       std::make_pair(container.back().get_name(), container.back().get_state()));
+  }
+
+  template <class HardwareT>
+  bool initialize_hardware(const HardwareInfo & hardware_info, HardwareT & hardware)
+  {
+    RCUTILS_LOG_INFO_NAMED(
+      "resource_manager", "Configuring hardware '%s' ", hardware_info.name.c_str());
+
+    bool result = hardware.initialize(hardware_info).id() ==
+                  lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED;
+
+    if (!result)
+    {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager", "Failed to initialize hardware '%s'", hardware_info.name.c_str());
+      // TODO(destogl): remove this.We should not throw exceptions around if hardware is not running
+      // or can not be loaded
+      throw std::runtime_error(std::string("Failed to configure '") + hardware_info.name + "'");
+    }
+    else
+    {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager", "Successful initialization of hardware '%s'",
+        hardware_info.name.c_str());
+    }
+    return result;
   }
 
   template <class HardwareT>
@@ -95,13 +123,8 @@ public:
     const HardwareInfo & hardware_info,
     std::unordered_map<std::string, bool> & claimed_command_interface_map)
   {
-    initialize_hardware<Actuator, ActuatorInterface>(hardware_info, actuator_loader_, actuators_);
-    if (
-      actuators_.back().initialize(hardware_info).id() !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED)
-    {
-      throw std::runtime_error(std::string("Failed to initialize '") + hardware_info.name + "'");
-    }
+    load_hardware<Actuator, ActuatorInterface>(hardware_info, actuator_loader_, actuators_);
+    initialize_hardware(hardware_info, actuators_.back());
     if (actuators_.back().configure().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
     {
       throw std::runtime_error(std::string("Failed to configure '") + hardware_info.name + "'");
@@ -112,13 +135,8 @@ public:
 
   void initialize_sensor(const HardwareInfo & hardware_info)
   {
-    initialize_hardware<Sensor, SensorInterface>(hardware_info, sensor_loader_, sensors_);
-    if (
-      sensors_.back().initialize(hardware_info).id() !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED)
-    {
-      throw std::runtime_error(std::string("Failed to initialize '") + hardware_info.name + "'");
-    }
+    load_hardware<Sensor, SensorInterface>(hardware_info, sensor_loader_, sensors_);
+    initialize_hardware(hardware_info, sensors_.back());
     if (sensors_.back().configure().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
     {
       throw std::runtime_error(std::string("Failed to configure '") + hardware_info.name + "'");
@@ -130,13 +148,8 @@ public:
     const HardwareInfo & hardware_info,
     std::unordered_map<std::string, bool> & claimed_command_interface_map)
   {
-    initialize_hardware<System, SystemInterface>(hardware_info, system_loader_, systems_);
-    if (
-      systems_.back().initialize(hardware_info).id() !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED)
-    {
-      throw std::runtime_error(std::string("Failed to initialize '") + hardware_info.name + "'");
-    }
+    load_hardware<System, SystemInterface>(hardware_info, system_loader_, systems_);
+    initialize_hardware(hardware_info, systems_.back());
     if (systems_.back().configure().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
     {
       throw std::runtime_error(std::string("Failed to configure '") + hardware_info.name + "'");
@@ -334,38 +347,34 @@ std::unordered_map<std::string, rclcpp_lifecycle::State> ResourceManager::get_co
   return resource_storage_->hardware_status_map_;
 }
 
-std::string interfaces_to_string(
-  const std::vector<std::string> & start_interfaces,
-  const std::vector<std::string> & stop_interfaces)
-{
-  std::stringstream ss;
-  ss << "Start interfaces: " << std::endl << "[" << std::endl;
-  for (const auto & start_if : start_interfaces)
-  {
-    ss << "  " << start_if << std::endl;
-  }
-  ss << "]" << std::endl;
-  ss << "Stop interfaces: " << std::endl << "[" << std::endl;
-  for (const auto & stop_if : stop_interfaces)
-  {
-    ss << "  " << stop_if << std::endl;
-  }
-  ss << "]" << std::endl;
-  return ss.str();
-}
-
 bool ResourceManager::prepare_command_mode_switch(
   const std::vector<std::string> & start_interfaces,
   const std::vector<std::string> & stop_interfaces)
 {
+  auto interfaces_to_string = [&]() {
+    std::stringstream ss;
+    ss << "Start interfaces: " << std::endl << "[" << std::endl;
+    for (const auto & start_if : start_interfaces)
+    {
+      ss << "  " << start_if << std::endl;
+    }
+    ss << "]" << std::endl;
+    ss << "Stop interfaces: " << std::endl << "[" << std::endl;
+    for (const auto & stop_if : stop_interfaces)
+    {
+      ss << "  " << stop_if << std::endl;
+    }
+    ss << "]" << std::endl;
+    return ss.str();
+  };
+
   for (auto & component : resource_storage_->actuators_)
   {
     if (return_type::OK != component.prepare_command_mode_switch(start_interfaces, stop_interfaces))
     {
       RCUTILS_LOG_ERROR_NAMED(
         "resource_manager", "Component '%s' did not accept new command resource combination: \n %s",
-        component.get_name().c_str(),
-        interfaces_to_string(start_interfaces, stop_interfaces).c_str());
+        component.get_name().c_str(), interfaces_to_string().c_str());
       return false;
     }
   }
@@ -375,8 +384,7 @@ bool ResourceManager::prepare_command_mode_switch(
     {
       RCUTILS_LOG_ERROR_NAMED(
         "resource_manager", "Component '%s' did not accept new command resource combination: \n %s",
-        component.get_name().c_str(),
-        interfaces_to_string(start_interfaces, stop_interfaces).c_str());
+        component.get_name().c_str(), interfaces_to_string().c_str());
       return false;
     }
   }
@@ -410,8 +418,10 @@ bool ResourceManager::perform_command_mode_switch(
   return true;
 }
 
-void ResourceManager::start_components()
+bool ResourceManager::start_components(const std::vector<std::string> & /*components_to_start*/)
 {
+  bool success = true;
+
   for (auto & component : resource_storage_->actuators_)
   {
     component.activate();
@@ -424,10 +434,14 @@ void ResourceManager::start_components()
   {
     component.activate();
   }
+
+  return success;
 }
 
-void ResourceManager::stop_components()
+bool ResourceManager::stop_components(const std::vector<std::string> & /*components_to_stop*/)
 {
+  bool success = true;
+
   for (auto & component : resource_storage_->actuators_)
   {
     component.deactivate();
@@ -440,6 +454,8 @@ void ResourceManager::stop_components()
   {
     component.deactivate();
   }
+
+  return success;
 }
 
 void ResourceManager::read()
