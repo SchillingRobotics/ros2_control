@@ -36,7 +36,7 @@ inline bool is_controller_inactive(const controller_interface::ControllerInterfa
          lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE;
 }
 
-inline bool is_controller_running(controller_interface::ControllerInterface & controller)
+inline bool is_controller_active(controller_interface::ControllerInterface & controller)
 {
   return controller.get_current_state().id() ==
          lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
@@ -242,7 +242,7 @@ controller_interface::return_type ControllerManager::unload_controller(
 
   auto & controller = *found_it;
 
-  if (is_controller_running(*controller.c)) {
+  if (is_controller_active(*controller.c)) {
     to.clear();
     RCLCPP_ERROR(
       get_logger(),
@@ -473,7 +473,7 @@ controller_interface::return_type ControllerManager::switch_controller(
       start_request_.begin(), start_request_.end(), controller.info.name);
     bool in_start_list = start_list_it != start_request_.end();
 
-    const bool is_running = is_controller_running(*controller.c);
+    const bool is_running = is_controller_active(*controller.c);
     const bool is_inactive = is_controller_inactive(*controller.c);
 
     auto handle_conflict = [&](const std::string & msg)
@@ -709,7 +709,7 @@ void ControllerManager::stop_controllers()
       continue;
     }
     auto controller = found_it->c;
-    if (is_controller_running(*controller)) {
+    if (is_controller_active(*controller)) {
       const auto new_state = controller->deactivate();
       controller->release_interfaces();
       if (new_state.id() != lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE) {
@@ -1035,7 +1035,7 @@ void ControllerManager::reload_controller_libraries_service_cb(
     // lock controllers
     std::lock_guard<std::recursive_mutex> guard(rt_controllers_wrapper_.controllers_lock_);
     for (const auto & controller : rt_controllers_wrapper_.get_updated_list(guard)) {
-      if (is_controller_running(*controller.c)) {
+      if (is_controller_active(*controller.c)) {
         running_controllers.push_back(controller.info.name);
       }
     }
@@ -1151,7 +1151,7 @@ controller_interface::return_type ControllerManager::update()
   for (auto loaded_controller : rt_controller_list) {
     // TODO(v-lopez) we could cache this information
     // https://github.com/ros-controls/ros2_control/issues/153
-    if (is_controller_running(*loaded_controller.c)) {
+    if (is_controller_active(*loaded_controller.c)) {
       auto controller_ret = loaded_controller.c->update();
       if (controller_ret != controller_interface::return_type::OK) {
         ret = controller_ret;
