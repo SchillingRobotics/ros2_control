@@ -104,35 +104,6 @@ TEST_F(TestResourceManager, initialization_with_urdf_unclaimed) {
   }
 }
 
-TEST_F(TestResourceManager, resource_status) {
-  hardware_interface::ResourceManager rm(ros2_control_test_assets::minimal_robot_urdf);
-
-  std::unordered_map<std::string, hardware_interface::status> status_map;
-
-  status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::CONFIGURED);
-  EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::CONFIGURED);
-  EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::CONFIGURED);
-}
-
-TEST_F(TestResourceManager, starting_and_stopping_resources) {
-  hardware_interface::ResourceManager rm(ros2_control_test_assets::minimal_robot_urdf);
-
-  std::unordered_map<std::string, hardware_interface::status> status_map;
-
-  rm.start_components();
-  status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::STARTED);
-  EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::STARTED);
-  EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::STARTED);
-
-  rm.stop_components();
-  status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::STOPPED);
-  EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::STOPPED);
-  EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::STOPPED);
-}
-
 TEST_F(TestResourceManager, resource_claiming) {
   hardware_interface::ResourceManager rm(ros2_control_test_assets::minimal_robot_urdf);
 
@@ -335,4 +306,33 @@ TEST_F(TestResourceManager, custom_prepare_perform_switch)
   EXPECT_TRUE(rm.perform_command_mode_switch(legal_keys_position, legal_keys_position));
   EXPECT_FALSE(rm.perform_command_mode_switch(empty_keys, empty_keys));
   EXPECT_FALSE(rm.perform_command_mode_switch(empty_keys, legal_keys_position));
+}
+
+TEST_F(TestResourceManager, resource_status) {
+  hardware_interface::ResourceManager rm(ros2_control_test_assets::minimal_robot_urdf);
+
+  std::unordered_map<std::string, hardware_interface::status> status_map;
+
+  status_map = rm.get_components_status();
+  EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::CONFIGURED);
+  EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::CONFIGURED);
+  EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::CONFIGURED);
+}
+
+TEST_F(TestResourceManager, starting_and_stopping_resources) {
+  hardware_interface::ResourceManager rm(ros2_control_test_assets::minimal_robot_urdf);
+
+  std::unordered_map<std::string, hardware_interface::status> status_map;
+
+  rm.start_components();
+  status_map = rm.get_components_status();
+  EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::STARTED);
+  EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::STARTED);
+  EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::STARTED);
+
+  rm.stop_components();
+  status_map = rm.get_components_status();
+  EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::STOPPED);
+  EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::STOPPED);
+  EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::STOPPED);
 }
