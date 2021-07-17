@@ -403,7 +403,8 @@ bool ResourceManager::perform_command_mode_switch(
   return true;
 }
 
-bool ResourceManager::start_components(const std::vector<std::string> & /*components_to_start*/)
+bool
+ResourceManager::activate_components(const std::vector<std::string> & /*component_names*/)
 {
   bool success = true;
 
@@ -420,7 +421,7 @@ bool ResourceManager::start_components(const std::vector<std::string> & /*compon
   return success;
 }
 
-bool ResourceManager::stop_components(const std::vector<std::string> & /*components_to_stop*/)
+bool ResourceManager::deactivate_components(const std::vector<std::string> & /*component_names*/)
 {
   bool success = true;
 

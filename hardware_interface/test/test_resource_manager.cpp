@@ -324,13 +324,13 @@ TEST_F(TestResourceManager, starting_and_stopping_resources) {
 
   std::unordered_map<std::string, hardware_interface::status> status_map;
 
-  rm.start_components();
+  rm.activate_components();
   status_map = rm.get_components_status();
   EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::STARTED);
   EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::STARTED);
   EXPECT_EQ(status_map["TestSystemHardware"], hardware_interface::status::STARTED);
 
-  rm.stop_components();
+  rm.deactivate_components();
   status_map = rm.get_components_status();
   EXPECT_EQ(status_map["TestActuatorHardware"], hardware_interface::status::STOPPED);
   EXPECT_EQ(status_map["TestSensorHardware"], hardware_interface::status::STOPPED);
