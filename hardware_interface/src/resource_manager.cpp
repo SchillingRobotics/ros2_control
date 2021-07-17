@@ -16,7 +16,6 @@
 
 #include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -403,39 +402,54 @@ bool ResourceManager::perform_command_mode_switch(
   return true;
 }
 
-bool
-ResourceManager::activate_components(const std::vector<std::string> & /*component_names*/)
+return_type ResourceManager::activate_components(const std::vector<std::string> & component_names)
 {
-  bool success = true;
+  return_type result = return_type::OK;
 
-  for (auto & component : resource_storage_->actuators_) {
-    component.start();
-  }
-  for (auto & component : resource_storage_->sensors_) {
-    component.start();
-  }
-  for (auto & component : resource_storage_->systems_) {
-    component.start();
+  if (activate_components_from_resource_storage(resource_storage_->actuators_, component_names) ==
+    return_type::ERROR)
+  {
+    result = return_type::ERROR;
   }
 
-  return success;
+  if (activate_components_from_resource_storage(resource_storage_->sensors_, component_names) ==
+    return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  if (activate_components_from_resource_storage(resource_storage_->systems_, component_names) ==
+    return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  return result;
 }
 
-bool ResourceManager::deactivate_components(const std::vector<std::string> & /*component_names*/)
+return_type ResourceManager::deactivate_components(const std::vector<std::string> & component_names)
 {
-  bool success = true;
+  return_type result = return_type::OK;
 
-  for (auto & component : resource_storage_->actuators_) {
-    component.stop();
-  }
-  for (auto & component : resource_storage_->sensors_) {
-    component.stop();
-  }
-  for (auto & component : resource_storage_->systems_) {
-    component.stop();
+  if (deactivate_components_from_resource_storage(resource_storage_->actuators_, component_names) ==
+    return_type::ERROR)
+  {
+    result = return_type::ERROR;
   }
 
-  return success;
+  if (deactivate_components_from_resource_storage(resource_storage_->sensors_, component_names) ==
+    return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  if (deactivate_components_from_resource_storage(resource_storage_->systems_, component_names) ==
+    return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  return result;
 }
 
 void ResourceManager::read()
