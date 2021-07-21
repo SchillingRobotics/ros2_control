@@ -272,7 +272,8 @@ return_type GenericSystem::read()
   for (size_t i = 0; i < other_states_.size(); ++i) {
     for (size_t j = 0; j < other_states_[i].size(); ++j) {
       if (i == index_custom_interface_with_following_offset_ &&
-        !std::isnan(joint_commands_[POSITION_INTERFACE_INDEX][j])) {
+        !std::isnan(joint_commands_[POSITION_INTERFACE_INDEX][j]))
+      {
         other_states_[i][j] =
           joint_commands_[POSITION_INTERFACE_INDEX][j] + position_state_following_offset_;
       } else if (!std::isnan(other_commands_[i][j])) {

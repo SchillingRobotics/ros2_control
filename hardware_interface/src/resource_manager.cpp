@@ -24,6 +24,7 @@
 #include "hardware_interface/actuator.hpp"
 #include "hardware_interface/actuator_interface.hpp"
 #include "hardware_interface/component_parser.hpp"
+#include "hardware_interface/hardware_component_info.hpp"
 #include "hardware_interface/sensor.hpp"
 #include "hardware_interface/sensor_interface.hpp"
 #include "hardware_interface/system.hpp"
@@ -68,8 +69,15 @@ public:
       loader.createUnmanagedInstance(hardware_info.hardware_class_type));
     HardwareT hardware(std::move(interface));
     container.emplace_back(std::move(hardware));
-    hardware_status_map_.emplace(
-      std::make_pair(container.back().get_name(), container.back().get_status()));
+
+    // initialize static data about hardware component to reduce later calls
+    HardwareComponentInfo component_info;
+    component_info.name = container.back().get_name();
+    component_info.type = container.back().get_type();
+    component_info.class_type = container.back().get_class_type();
+    component_info.state = container.back().get_status();
+    hardware_info_map_.emplace(
+      std::make_pair(component_info.name, component_info));
   }
 
   template<class HardwareT>
@@ -158,7 +166,7 @@ public:
   std::vector<Sensor> sensors_;
   std::vector<System> systems_;
 
-  std::unordered_map<std::string, status> hardware_status_map_;
+  std::unordered_map<std::string, HardwareComponentInfo> hardware_info_map_;
 
   std::map<std::string, StateInterface> state_interface_map_;
   std::map<std::string, CommandInterface> command_interface_map_;
@@ -314,19 +322,19 @@ size_t ResourceManager::system_components_size() const
   return resource_storage_->systems_.size();
 }
 
-std::unordered_map<std::string, status> ResourceManager::get_components_status()
+std::unordered_map<std::string, HardwareComponentInfo> ResourceManager::get_components_status()
 {
   for (auto & component : resource_storage_->actuators_) {
-    resource_storage_->hardware_status_map_[component.get_name()] = component.get_status();
+    resource_storage_->hardware_info_map_[component.get_name()].state = component.get_status();
   }
   for (auto & component : resource_storage_->sensors_) {
-    resource_storage_->hardware_status_map_[component.get_name()] = component.get_status();
+    resource_storage_->hardware_info_map_[component.get_name()].state = component.get_status();
   }
   for (auto & component : resource_storage_->systems_) {
-    resource_storage_->hardware_status_map_[component.get_name()] = component.get_status();
+    resource_storage_->hardware_info_map_[component.get_name()].state = component.get_status();
   }
 
-  return resource_storage_->hardware_status_map_;
+  return resource_storage_->hardware_info_map_;
 }
 
 bool ResourceManager::prepare_command_mode_switch(

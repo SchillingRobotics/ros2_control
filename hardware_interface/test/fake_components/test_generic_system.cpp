@@ -412,9 +412,10 @@ void generic_system_functional_test(const std::string & urdf, const double offse
   hardware_interface::ResourceManager rm(urdf);
 
   // check is hardware is configured
-  std::unordered_map<std::string, hardware_interface::status> status_map;
-  status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["GenericSystem2dof"], hardware_interface::status::CONFIGURED);
+  auto status_map = rm.get_components_status();
+  EXPECT_EQ(
+    status_map["GenericSystem2dof"].state,
+    hardware_interface::status::CONFIGURED);
 
   // Check initial values
   hardware_interface::LoanedStateInterface j1p_s = rm.claim_state_interface("joint1/position");
@@ -492,11 +493,11 @@ void generic_system_functional_test(const std::string & urdf, const double offse
 
   rm.activate_components();
   status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["GenericSystem2dof"], hardware_interface::status::STARTED);
+  EXPECT_EQ(status_map["GenericSystem2dof"].state, hardware_interface::status::STARTED);
 
   rm.deactivate_components();
   status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["GenericSystem2dof"], hardware_interface::status::STOPPED);
+  EXPECT_EQ(status_map["GenericSystem2dof"].state, hardware_interface::status::STOPPED);
 }
 
 TEST_F(TestGenericSystem, generic_system_2dof_functionality) {
@@ -916,7 +917,7 @@ TEST_F(TestGenericSystem, generic_system_2dof_functionality_with_offset_custom_i
     hardware_system_2dof_standard_interfaces_with_custom_interface_for_offset_missing_ +
     ros2_control_test_assets::urdf_tail;
 
-  // custom interface is misisng so offset will not be applied
+  // custom interface is missing so offset will not be applied
   generic_system_functional_test(urdf, 0.0);
 }
 
@@ -931,9 +932,10 @@ TEST_F(TestGenericSystem, generic_system_2dof_functionality_with_offset_custom_i
   hardware_interface::ResourceManager rm(urdf);
 
   // check is hardware is configured
-  std::unordered_map<std::string, hardware_interface::status> status_map;
-  status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["GenericSystem2dof"], hardware_interface::status::CONFIGURED);
+  auto status_map = rm.get_components_status();
+  EXPECT_EQ(
+    status_map["GenericSystem2dof"].state,
+    hardware_interface::status::CONFIGURED);
 
   // Check initial values
   hardware_interface::LoanedStateInterface j1p_s = rm.claim_state_interface("joint1/position");
@@ -977,7 +979,7 @@ TEST_F(TestGenericSystem, generic_system_2dof_functionality_with_offset_custom_i
   ASSERT_EQ(0.33, j2p_c.get_value());
   ASSERT_EQ(0.44, j2v_c.get_value());
 
-  // write() does not chnage values
+  // write() does not change values
   rm.write();
   ASSERT_EQ(3.45, j1p_s.get_value());
   ASSERT_EQ(0.0, j1v_s.get_value());
@@ -1021,9 +1023,9 @@ TEST_F(TestGenericSystem, generic_system_2dof_functionality_with_offset_custom_i
 
   rm.activate_components();
   status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["GenericSystem2dof"], hardware_interface::status::STARTED);
+  EXPECT_EQ(status_map["GenericSystem2dof"].state, hardware_interface::status::STARTED);
 
   rm.deactivate_components();
   status_map = rm.get_components_status();
-  EXPECT_EQ(status_map["GenericSystem2dof"], hardware_interface::status::STOPPED);
+  EXPECT_EQ(status_map["GenericSystem2dof"].state, hardware_interface::status::STOPPED);
 }

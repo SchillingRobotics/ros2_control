@@ -21,10 +21,16 @@ namespace hardware_interface
 {
 enum class status : std::uint8_t
 {
+  // Old names
   UNKNOWN = 0,
   CONFIGURED = 1,
   STARTED = 3,
   STOPPED = 4,
+
+  // new naming - corresponding to names in lifecycle_msgs/State
+  UNCONFIGURED = 0,   // in lifecycle_msgs/State is "1"
+  ACTIVE = 3,
+  INACTIVE = 4,       // in lifecycle_msgs/State is "2"
 };
 
 }  // namespace hardware_interface
