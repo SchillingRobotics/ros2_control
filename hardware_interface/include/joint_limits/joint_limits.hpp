@@ -69,6 +69,6 @@ struct SoftJointLimits
   double k_velocity;
 };
 
-}  // namespace joint_limits_interface
+}  // namespace joint_limits
 
 #endif  // JOINT_LIMITS__JOINT_LIMITS_HPP_
