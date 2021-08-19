@@ -193,12 +193,17 @@ void ResourceManager::load_urdf(const std::string & urdf, bool validate_interfac
   const auto hardware_info = hardware_interface::parse_control_resources_from_urdf(urdf);
   for (const auto & hardware : hardware_info) {
     if (hardware.type == actuator_type) {
+      std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
+      std::lock_guard<std::recursive_mutex> guard_claimed(claimed_command_interfaces_lock_);
       resource_storage_->initialize_actuator(hardware, claimed_command_interface_map_);
     }
     if (hardware.type == sensor_type) {
+      std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
       resource_storage_->initialize_sensor(hardware);
     }
     if (hardware.type == system_type) {
+      std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
+      std::lock_guard<std::recursive_mutex> guard_claimed(claimed_command_interfaces_lock_);
       resource_storage_->initialize_system(hardware, claimed_command_interface_map_);
     }
   }
@@ -216,12 +221,14 @@ LoanedStateInterface ResourceManager::claim_state_interface(const std::string & 
             std::string("State interface with key '") + key + "' does not exist");
   }
 
+  std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
   return LoanedStateInterface(resource_storage_->state_interface_map_.at(key));
 }
 
 std::vector<std::string> ResourceManager::state_interface_keys() const
 {
   std::vector<std::string> keys;
+  std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
   for (const auto & item : resource_storage_->state_interface_map_) {
     keys.push_back(std::get<0>(item));
   }
@@ -230,6 +237,7 @@ std::vector<std::string> ResourceManager::state_interface_keys() const
 
 bool ResourceManager::state_interface_exists(const std::string & key) const
 {
+  std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
   return resource_storage_->state_interface_map_.find(key) !=
          resource_storage_->state_interface_map_.end();
 }
@@ -240,7 +248,7 @@ bool ResourceManager::command_interface_is_claimed(const std::string & key) cons
     return false;
   }
 
-  std::lock_guard<std::recursive_mutex> guard(resource_lock_);
+  std::lock_guard<std::recursive_mutex> guard_claimed(claimed_command_interfaces_lock_);
   return claimed_command_interface_map_.at(key);
 }
 
@@ -251,13 +259,14 @@ LoanedCommandInterface ResourceManager::claim_command_interface(const std::strin
             std::string("Command interface with '") + key + "' does not exist");
   }
 
-  std::lock_guard<std::recursive_mutex> guard(resource_lock_);
+  std::lock_guard<std::recursive_mutex> guard_claimed(claimed_command_interfaces_lock_);
   if (command_interface_is_claimed(key)) {
     throw std::runtime_error(
             std::string("Command interface with '") + key + "' is already claimed");
   }
 
   claimed_command_interface_map_[key] = true;
+  std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
   return LoanedCommandInterface(
     resource_storage_->command_interface_map_.at(key),
     std::bind(&ResourceManager::release_command_interface, this, key));
@@ -265,13 +274,14 @@ LoanedCommandInterface ResourceManager::claim_command_interface(const std::strin
 
 void ResourceManager::release_command_interface(const std::string & key)
 {
-  std::lock_guard<std::recursive_mutex> guard(resource_lock_);
+  std::lock_guard<std::recursive_mutex> guard_claimed(claimed_command_interfaces_lock_);
   claimed_command_interface_map_[key] = false;
 }
 
 std::vector<std::string> ResourceManager::command_interface_keys() const
 {
   std::vector<std::string> keys;
+  std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
   for (const auto & item : resource_storage_->command_interface_map_) {
     keys.push_back(std::get<0>(item));
   }
@@ -280,6 +290,7 @@ std::vector<std::string> ResourceManager::command_interface_keys() const
 
 bool ResourceManager::command_interface_exists(const std::string & key) const
 {
+  std::lock_guard<std::recursive_mutex> guard(resource_interfaces_lock_);
   return resource_storage_->command_interface_map_.find(key) !=
          resource_storage_->command_interface_map_.end();
 }

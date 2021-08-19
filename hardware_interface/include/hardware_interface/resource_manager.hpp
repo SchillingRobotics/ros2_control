@@ -32,7 +32,8 @@
 #define COMPONENT_NAME_COMPARE [&](const auto & name) {return name == component.get_name();}
 
 namespace    // utility namespace
-{template<typename ComponentT>
+{
+template<typename ComponentT>
 hardware_interface::return_type activate_components_from_resource_storage(
   std::vector<ComponentT> & components, const std::vector<std::string> & component_names)
 {
@@ -321,7 +322,8 @@ private:
 
   std::unordered_map<std::string, bool> claimed_command_interface_map_;
 
-  mutable std::recursive_mutex resource_lock_;
+  mutable std::recursive_mutex resource_interfaces_lock_;
+  mutable std::recursive_mutex claimed_command_interfaces_lock_;
   std::unique_ptr<ResourceStorage> resource_storage_;
 };
 
