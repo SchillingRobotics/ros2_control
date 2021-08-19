@@ -72,11 +72,11 @@ public:
 
     // initialize static data about hardware component to reduce later calls
     HardwareComponentInfo component_info;
-    component_info.name = container.back().get_name();
-    component_info.type = container.back().get_type();
-    component_info.class_type = container.back().get_class_type();
-    component_info.state = container.back().get_status();
-    hardware_info_map_.emplace(
+    component_info.name = hardware_info.name;
+    component_info.type = hardware_info.type;
+    component_info.class_type = hardware_info.hardware_class_type;
+    component_info.state = hardware_interface::status::UNKNOWN;
+    hardware_info_map_.insert(
       std::make_pair(component_info.name, component_info));
   }
 
