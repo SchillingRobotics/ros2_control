@@ -209,12 +209,6 @@ void ResourceManager::load_urdf(const std::string & urdf, bool validate_interfac
   }
 }
 
-void ResourceManager::release_command_interface(const std::string & key)
-{
-  std::lock_guard<decltype(resource_lock_)> lg(resource_lock_);
-  claimed_command_interface_map_[key] = false;
-}
-
 LoanedStateInterface ResourceManager::claim_state_interface(const std::string & key)
 {
   if (!state_interface_exists(key)) {
@@ -246,7 +240,7 @@ bool ResourceManager::command_interface_is_claimed(const std::string & key) cons
     return false;
   }
 
-  std::lock_guard<decltype(resource_lock_)> lg(resource_lock_);
+  std::lock_guard<std::recursive_mutex> guard(resource_lock_);
   return claimed_command_interface_map_.at(key);
 }
 
@@ -257,7 +251,7 @@ LoanedCommandInterface ResourceManager::claim_command_interface(const std::strin
             std::string("Command interface with '") + key + "' does not exist");
   }
 
-  std::lock_guard<decltype(resource_lock_)> lg(resource_lock_);
+  std::lock_guard<std::recursive_mutex> guard(resource_lock_);
   if (command_interface_is_claimed(key)) {
     throw std::runtime_error(
             std::string("Command interface with '") + key + "' is already claimed");
@@ -267,6 +261,12 @@ LoanedCommandInterface ResourceManager::claim_command_interface(const std::strin
   return LoanedCommandInterface(
     resource_storage_->command_interface_map_.at(key),
     std::bind(&ResourceManager::release_command_interface, this, key));
+}
+
+void ResourceManager::release_command_interface(const std::string & key)
+{
+  std::lock_guard<std::recursive_mutex> guard(resource_lock_);
+  claimed_command_interface_map_[key] = false;
 }
 
 std::vector<std::string> ResourceManager::command_interface_keys() const
