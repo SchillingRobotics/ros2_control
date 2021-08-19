@@ -28,6 +28,7 @@
 #include "controller_manager_msgs/srv/configure_start_controller.hpp"
 #include "controller_manager_msgs/srv/list_controllers.hpp"
 #include "controller_manager_msgs/srv/list_controller_types.hpp"
+#include "controller_manager_msgs/srv/list_hardware_components.hpp"
 #include "controller_manager_msgs/srv/list_hardware_interfaces.hpp"
 #include "controller_manager_msgs/srv/load_controller.hpp"
 #include "controller_manager_msgs/srv/load_configure_controller.hpp"
@@ -68,6 +69,9 @@ public:
   CONTROLLER_MANAGER_PUBLIC
   virtual
   ~ControllerManager() = default;
+
+  CONTROLLER_MANAGER_PUBLIC
+  void init_resource_manager();
 
   CONTROLLER_MANAGER_PUBLIC
   controller_interface::ControllerInterfaceSharedPtr
@@ -181,6 +185,11 @@ protected:
   void list_controller_types_srv_cb(
     const std::shared_ptr<controller_manager_msgs::srv::ListControllerTypes::Request> request,
     std::shared_ptr<controller_manager_msgs::srv::ListControllerTypes::Response> response);
+
+  CONTROLLER_MANAGER_PUBLIC
+  void list_hardware_components_srv_cb(
+    const std::shared_ptr<controller_manager_msgs::srv::ListHardwareComponents::Request> request,
+    std::shared_ptr<controller_manager_msgs::srv::ListHardwareComponents::Response> response);
 
   CONTROLLER_MANAGER_PUBLIC
   void list_hardware_interfaces_srv_cb(
@@ -324,6 +333,8 @@ private:
     list_controllers_service_;
   rclcpp::Service<controller_manager_msgs::srv::ListControllerTypes>::SharedPtr
     list_controller_types_service_;
+  rclcpp::Service<controller_manager_msgs::srv::ListHardwareComponents>::SharedPtr
+    list_hardware_components_service_;
   rclcpp::Service<controller_manager_msgs::srv::ListHardwareInterfaces>::SharedPtr
     list_hardware_interfaces_service_;
   rclcpp::Service<controller_manager_msgs::srv::LoadController>::SharedPtr
