@@ -23,6 +23,7 @@
 #include "controller_manager/controller_manager.hpp"
 #include "controller_manager_msgs/msg/hardware_components_state.hpp"
 #include "controller_manager_msgs/srv/list_controllers.hpp"
+#include "controller_manager_msgs/srv/manage_hardware_activity.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/parameter.hpp"
 
@@ -161,6 +162,27 @@ public:
       }
     }
   }
+
+  bool manage_hardware_activity(
+    const std::vector<std::string> & activate,
+    const std::vector<std::string> & deactivate)
+  {
+    rclcpp::executors::SingleThreadedExecutor srv_executor;
+    rclcpp::Node::SharedPtr mha_srv_node = std::make_shared<rclcpp::Node>("mha_srv_client");
+    srv_executor.add_node(mha_srv_node);
+    rclcpp::Client<controller_manager_msgs::srv::ManageHardwareActivity>::SharedPtr mha_client =
+      mha_srv_node->create_client<controller_manager_msgs::srv::ManageHardwareActivity>(
+      std::string(TEST_CM_NAME) + "/manage_hardware_activity");
+    auto request =
+      std::make_shared<controller_manager_msgs::srv::ManageHardwareActivity::Request>();
+
+    request->activate = activate;
+    request->deactivate = deactivate;
+
+    auto result = call_service_and_wait(*mha_client, request, srv_executor);
+
+    return result->ok;
+  }
 };
 
 TEST_F(TestControllerManagerHWManagementSrvs, list_hardware_components) {
@@ -189,14 +211,74 @@ TEST_F(TestControllerManagerHWManagementSrvs, selective_start_components) {
     {{false, false}, {false, false}},    // system
   })
   );
-//   auto status_map = cm_->resource_manager_->get_components_status();
-//   EXPECT_EQ(status_map["TestActuatorHardware"].component_status,
-//   hardware_interface::status::CONFIGURED);
-//   EXPECT_EQ(status_map["TestSensorHardware"].component_status,
-//   hardware_interface::status::CONFIGURED);
-//   EXPECT_EQ(status_map["TestSystemHardware"].component_status,
-//   hardware_interface::status::CONFIGURED);
-//
+
+  // Activate system
+  manage_hardware_activity(
+    {TEST_SYSTEM_HARDWARE_NAME},  // activate
+    {}   // deactivate
+  );
+  list_hardware_components_and_check(
+    // actuator, sensor, system
+    std::vector<std::string>({HW_STATE_ACTIVE, HW_STATE_CONFIGURED, HW_STATE_ACTIVE}),
+    std::vector<std::vector<std::vector<bool>>>(
+  {
+    {{false}, {false, false}},    // actuator
+    {{}, {false}},    // sensor
+    {{false, false}, {false, false}},    // system
+  })
+  );
+
+  // Deactivate actuator; Activate sensor
+  manage_hardware_activity(
+    {TEST_SENSOR_HARDWARE_NAME},  // activate
+    {TEST_ACTUATOR_HARDWARE_NAME}   // deactivate
+  );
+  list_hardware_components_and_check(
+    // actuator, sensor, system
+    std::vector<std::string>({HW_STATE_INACTIVE, HW_STATE_ACTIVE, HW_STATE_ACTIVE}),
+    std::vector<std::vector<std::vector<bool>>>(
+  {
+    {{false}, {false, false}},    // actuator
+    {{}, {false}},    // sensor
+    {{false, false}, {false, false}},    // system
+  })
+  );
+
+  // Double activate system
+  // TODO(destogl): add strictness test
+  manage_hardware_activity(
+    {TEST_SYSTEM_HARDWARE_NAME},  // activate
+    {}   // deactivate
+  );
+  list_hardware_components_and_check(
+    // actuator, sensor, system
+    std::vector<std::string>({HW_STATE_INACTIVE, HW_STATE_ACTIVE, HW_STATE_ACTIVE}),
+    std::vector<std::vector<std::vector<bool>>>(
+  {
+    {{false}, {false, false}},    // actuator
+    {{}, {false}},    // sensor
+    {{false, false}, {false, false}},    // system
+  })
+  );
+
+  // Double deactivate actuator
+  // TODO(destogl): add strictness test
+  manage_hardware_activity(
+    {},  // activate
+    {TEST_ACTUATOR_HARDWARE_NAME}   // deactivate
+  );
+  list_hardware_components_and_check(
+    // actuator, sensor, system
+    std::vector<std::string>({HW_STATE_INACTIVE, HW_STATE_ACTIVE, HW_STATE_ACTIVE}),
+    std::vector<std::vector<std::vector<bool>>>(
+  {
+    {{false}, {false, false}},    // actuator
+    {{}, {false}},    // sensor
+    {{false, false}, {false, false}},    // system
+  })
+  );
+
+
 //   auto test_controller = std::make_shared<test_controller::TestController>();
 //   cm_->add_controller(
 //     test_controller, test_controller::TEST_CONTROLLER_NAME,

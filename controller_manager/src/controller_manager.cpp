@@ -183,6 +183,12 @@ void ControllerManager::init_services()
     std::bind(&ControllerManager::list_hardware_interfaces_srv_cb, this, _1, _2),
     rmw_qos_profile_services_default,
     best_effort_callback_group_);
+  manage_hardware_activity_service_ =
+    create_service<controller_manager_msgs::srv::ManageHardwareActivity>(
+    "~/manage_hardware_activity",
+    std::bind(&ControllerManager::manage_hardware_activity_srv_cb, this, _1, _2),
+    rmw_qos_profile_services_default,
+    best_effort_callback_group_);
 }
 
 controller_interface::ControllerInterfaceSharedPtr ControllerManager::load_controller(
@@ -1185,6 +1191,152 @@ void ControllerManager::list_hardware_interfaces_srv_cb(
     response->command_interfaces.push_back(hwi);
   }
   RCLCPP_DEBUG(get_logger(), "list hardware interfaces service finished");
+}
+
+void ControllerManager::manage_hardware_activity_srv_cb(
+  const std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Request> request,
+  std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Response> response)
+{
+  RCLCPP_INFO(get_logger(), "manage hardware activity service called");
+  std::lock_guard<std::mutex> guard(services_lock_);
+  RCLCPP_INFO(get_logger(), "manage hardware activity service locked");
+
+  RCLCPP_DEBUG(get_logger(), "Changing hardware activity:");
+  for (const auto & hardware : request->activate) {
+    RCLCPP_DEBUG(get_logger(), "- Activating hardware '%s'", hardware.c_str());
+  }
+  for (const auto & hardware : request->deactivate) {
+    RCLCPP_DEBUG(get_logger(), "- Deactivating hardware '%s'", hardware.c_str());
+  }
+
+  // Add here also strictness!!
+  const auto list_hardware = [this](const std::vector<std::string> & hardware_list,
+      std::vector<std::string> & request_list,
+      const std::string & action,
+      const hardware_interface::status & required_state)
+    {
+      // TODO(destogl): lock hardware - it should only prevent that no additional call to this
+      // method can be done. This is only method responsible to set states of the hardware.
+      // Still the operation can be executed in different threads depending on the srv callbacks
+      // Do we need to lock? Because services are already locked.
+
+      for (const auto & hardware : hardware_list) {
+        const auto & hw_infos = resource_manager_->get_components_status();
+
+        const auto found_it = hw_infos.find(hardware);
+        if (found_it == hw_infos.end()) {
+          // if strictness
+          // RCLCPP_ERROR(
+          //   get_logger(),
+          //   "Could not '%s' hardware with name '%s' because no hardware with this name exists",
+          //   action.c_str(),
+          //   hardware.c_str());
+          // return ERROR
+          RCLCPP_WARN(
+            get_logger(),
+            "Could not '%s' hardware with name '%s' because no hardware with this name exists",
+            action.c_str(),
+            hardware.c_str());
+        } else {
+          RCLCPP_DEBUG(
+            get_logger(),
+            "Found hardware '%s' that needs to be %sed",
+            hardware.c_str(),
+            action.c_str());
+
+          if (hw_infos.at(hardware).state != required_state) {
+            // if strictness
+            // RCLCPP_ERROR(
+            //   get_logger(),
+            //   "Could not '%s' hardware with name '%s' because it is not in correct state",,
+            //   action.c_str(),
+            //   hardware.c_str());
+            // return ERROR
+            // TODO(destogl): print-out which state is needed when using Lifecycle states
+            RCLCPP_WARN(
+              get_logger(),
+              "Could not '%s' hardware with name '%s' because it is not in correct state",
+              action.c_str(),
+              hardware.c_str());
+          } else {
+            request_list.push_back(hardware);
+          }
+        }
+      }
+      RCLCPP_DEBUG(
+        get_logger(), "'%s' request vector has size %zu",
+        action.c_str(), request_list.size());
+
+      return controller_interface::return_type::OK;
+    };
+
+  // initialize lists for activate and deactivate HW and reserve them to potential max length
+  std::vector<std::string> activate_request;
+  activate_request.reserve(request->activate.size());
+  std::vector<std::string> deactivate_request;
+  deactivate_request.reserve(request->deactivate.size());
+
+  auto ret = list_hardware(
+    request->deactivate, deactivate_request, "deactivate", hardware_interface::status::ACTIVE);
+  if (ret != controller_interface::return_type::OK) {
+    deactivate_request.clear();
+    response->ok = false;
+    return;
+  }
+
+  ret = list_hardware(
+    request->activate, activate_request, "activate", hardware_interface::status::INACTIVE);
+  if (ret != controller_interface::return_type::OK) {
+    deactivate_request.clear();
+    activate_request.clear();
+    response->ok = false;
+    return;
+  }
+
+  // Workaround for current state naming
+  // TODO(destogl): remove the following block after Lifecycle setup if finalized
+  ret = list_hardware(
+    request->activate, activate_request, "activate", hardware_interface::status::CONFIGURED);
+  if (ret != controller_interface::return_type::OK) {
+    deactivate_request.clear();
+    activate_request.clear();
+    response->ok = false;
+    return;
+  }
+
+  if (activate_request.empty() && deactivate_request.empty()) {
+    RCLCPP_INFO(
+      get_logger(),
+      "Empty activate and deactivate list, not requesting hardware state change");
+    response->ok = true;
+    return;
+  }
+
+  // deactivate components
+  if (!deactivate_request.empty()) {
+    if (resource_manager_->deactivate_components(deactivate_request) !=
+      hardware_interface::return_type::OK)
+    {
+      RCLCPP_ERROR(get_logger(), "deactivation of hardware components was not successful");
+      response->ok = false;
+      return;
+    }
+  }
+
+  // activate components
+  if (!activate_request.empty()) {
+    if (resource_manager_->activate_components(activate_request) !=
+      hardware_interface::return_type::OK)
+    {
+      RCLCPP_ERROR(get_logger(), "activation of hardware components was not successful");
+      response->ok = false;
+      return;
+    }
+  }
+
+  response->ok = true;
+
+  RCLCPP_INFO(get_logger(), "manage hardware activity service finished");
 }
 
 std::vector<std::string> ControllerManager::get_controller_names()

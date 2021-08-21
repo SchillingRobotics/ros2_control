@@ -33,6 +33,7 @@
 #include "controller_manager_msgs/srv/load_controller.hpp"
 #include "controller_manager_msgs/srv/load_configure_controller.hpp"
 #include "controller_manager_msgs/srv/load_start_controller.hpp"
+#include "controller_manager_msgs/srv/manage_hardware_activity.hpp"
 #include "controller_manager_msgs/srv/reload_controller_libraries.hpp"
 #include "controller_manager_msgs/srv/switch_controller.hpp"
 #include "controller_manager_msgs/srv/unload_controller.hpp"
@@ -236,6 +237,11 @@ protected:
     const std::shared_ptr<controller_manager_msgs::srv::ListHardwareComponents::Request> request,
     std::shared_ptr<controller_manager_msgs::srv::ListHardwareComponents::Response> response);
 
+  CONTROLLER_MANAGER_PUBLIC
+  void manage_hardware_activity_srv_cb(
+    const std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Request> request,
+    std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Response> response);
+
 private:
   std::vector<std::string> get_controller_names();
 
@@ -354,6 +360,8 @@ private:
     list_hardware_components_service_;
   rclcpp::Service<controller_manager_msgs::srv::ListHardwareInterfaces>::SharedPtr
     list_hardware_interfaces_service_;
+  rclcpp::Service<controller_manager_msgs::srv::ManageHardwareActivity>::SharedPtr
+    manage_hardware_activity_service_;
 
   std::vector<std::string> start_request_, stop_request_;
   std::vector<std::string> start_command_interface_request_, stop_command_interface_request_;
