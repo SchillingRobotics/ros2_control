@@ -92,8 +92,8 @@ public:
   }
 
   void list_hardware_components_and_check(
-    const std::vector<std::string> hw_states,
-    const std::vector<std::vector<std::vector<bool>>> hw_itfs_claimed_status)
+    const std::vector<std::string> & hw_states,
+    const std::vector<std::vector<std::vector<bool>>> & hw_itfs_claimed_status)
   {
     rclcpp::executors::SingleThreadedExecutor srv_executor;
     rclcpp::Node::SharedPtr list_srv_node = std::make_shared<rclcpp::Node>("list_srv_client");
