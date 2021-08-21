@@ -31,49 +31,6 @@
 
 #define COMPONENT_NAME_COMPARE [&](const auto & name) {return name == component.get_name();}
 
-namespace    // utility namespace
-{
-template<typename ComponentT>
-hardware_interface::return_type activate_components_from_resource_storage(
-  std::vector<ComponentT> & components, const std::vector<std::string> & component_names)
-{
-  hardware_interface::return_type result = hardware_interface::return_type::OK;
-
-  for (auto & component : components) {
-    auto found_it = std::find_if(
-      component_names.begin(), component_names.end(), COMPONENT_NAME_COMPARE);
-
-    if (component_names.empty() || found_it != component_names.end()) {
-      if (component.start() == hardware_interface::return_type::ERROR) {
-        result = hardware_interface::return_type::ERROR;
-      }
-    }
-  }
-
-  return result;
-}
-
-template<typename ComponentT>
-hardware_interface::return_type deactivate_components_from_resource_storage(
-  std::vector<ComponentT> & components, const std::vector<std::string> & component_names)
-{
-  hardware_interface::return_type result = hardware_interface::return_type::OK;
-
-  for (auto & component : components) {
-    auto found_it = std::find_if(
-      component_names.begin(), component_names.end(), COMPONENT_NAME_COMPARE);
-
-    if (component_names.empty() || found_it != component_names.end()) {
-      if (component.stop() == hardware_interface::return_type::ERROR) {
-        result = hardware_interface::return_type::ERROR;
-      }
-    }
-  }
-
-  return result;
-}
-}  // namespace
-
 
 namespace hardware_interface
 {

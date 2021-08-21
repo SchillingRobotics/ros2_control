@@ -14,6 +14,7 @@
 
 #include "hardware_interface/resource_manager.hpp"
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -75,32 +76,78 @@ public:
     component_info.name = hardware_info.name;
     component_info.type = hardware_info.type;
     component_info.class_type = hardware_info.hardware_class_type;
-    component_info.state = hardware_interface::status::UNKNOWN;
     hardware_info_map_.insert(
       std::make_pair(component_info.name, component_info));
   }
 
   template<class HardwareT>
-  bool configure_hardware(const HardwareInfo & hardware_info, HardwareT & hardware)
+  return_type configure_hardware(const HardwareInfo & hardware_info, HardwareT & hardware)
   {
     RCUTILS_LOG_INFO_NAMED(
       "resource_manager",
       "Configuring hardware '%s' ", hardware_info.name.c_str());
 
-    bool result = hardware.configure(hardware_info) == return_type::OK;
+    return_type result = hardware.configure(hardware_info);
 
-    if (!result) {
-      RCUTILS_LOG_INFO_NAMED(
-        "resource_manager",
-        "Failed to configure hardware '%s'", hardware_info.name.c_str());
-      // TODO(destogl): remove this.We should not throw exceptions around if hardware is not running
-      // or can not be loaded
-      throw std::runtime_error(std::string("Failed to configure '") + hardware_info.name + "'");
-    } else {
+    if (result == return_type::OK) {
       RCUTILS_LOG_INFO_NAMED(
         "resource_manager",
         "Successful configuration of hardware '%s'", hardware_info.name.c_str());
+      import_state_interfaces(hardware);
+    } else {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager",
+        "Failed to configure hardware '%s'", hardware_info.name.c_str());
     }
+
+    return result;
+  }
+
+  template<class HardwareT>
+  return_type activate_hardware(HardwareT & hardware)
+  {
+    RCUTILS_LOG_INFO_NAMED(
+      "resource_manager",
+      "activate hardware '%s' ", hardware.get_name().c_str());
+
+    // TODO(destogl): change this to activate when Lifecycle is updated
+    return_type result = hardware.start();
+
+    if (result == return_type::OK) {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager",
+        "Successful activation of hardware '%s'", hardware.get_name().c_str());
+      import_state_interfaces(hardware);
+    } else {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager",
+        "Failed to activate hardware '%s'", hardware.get_name().c_str());
+    }
+
+    return result;
+  }
+
+  template<class HardwareT>
+  return_type deactivate_hardware(HardwareT & hardware)
+  {
+    RCUTILS_LOG_INFO_NAMED(
+      "resource_manager",
+      "deactivate hardware '%s' ", hardware.get_name().c_str());
+
+    // TODO(destogl): change this to deactivate when Lifecycle is updated
+    return_type result = hardware.stop();
+
+    if (result == return_type::OK) {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager",
+        "Successful deactivation of hardware '%s'", hardware.get_name().c_str());
+      import_state_interfaces(hardware);
+    } else {
+      RCUTILS_LOG_INFO_NAMED(
+        "resource_manager",
+        "Failed to deactivate hardware '%s'", hardware.get_name().c_str());
+    }
+
     return result;
   }
 
@@ -136,7 +183,6 @@ public:
   {
     load_hardware<Actuator, ActuatorInterface>(hardware_info, actuator_loader_, actuators_);
     configure_hardware(hardware_info, actuators_.back());
-    import_state_interfaces(actuators_.back());
     import_command_interfaces(actuators_.back(), claimed_command_interface_map);
   }
 
@@ -144,7 +190,6 @@ public:
   {
     load_hardware<Sensor, SensorInterface>(hardware_info, sensor_loader_, sensors_);
     configure_hardware(hardware_info, sensors_.back());
-    import_state_interfaces(sensors_.back());
   }
 
   void initialize_system(
@@ -153,7 +198,6 @@ public:
   {
     load_hardware<System, SystemInterface>(hardware_info, system_loader_, systems_);
     configure_hardware(hardware_info, systems_.back());
-    import_state_interfaces(systems_.back());
     import_command_interfaces(systems_.back(), claimed_command_interface_map);
   }
 
@@ -421,24 +465,49 @@ bool ResourceManager::perform_command_mode_switch(
   return true;
 }
 
+auto execute_action_on_components_from_resource_storage = [](
+  auto action, auto & components, const std::vector<std::string> & component_names)
+  {
+    hardware_interface::return_type result = hardware_interface::return_type::OK;
+
+    for (auto & component : components) {
+      auto found_it = std::find_if(
+        component_names.begin(), component_names.end(), COMPONENT_NAME_COMPARE);
+
+      if (component_names.empty() || found_it != component_names.end()) {
+        if (action(component) ==
+          hardware_interface::return_type::ERROR)
+        {
+          result = hardware_interface::return_type::ERROR;
+        }
+      }
+    }
+    return result;
+  };
+
 return_type ResourceManager::activate_components(const std::vector<std::string> & component_names)
 {
+  using std::placeholders::_1;
+
   return_type result = return_type::OK;
 
-  if (activate_components_from_resource_storage(resource_storage_->actuators_, component_names) ==
-    return_type::ERROR)
+  if (execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::activate_hardware<Actuator>, resource_storage_.get(), _1),
+      resource_storage_->actuators_, component_names) == return_type::ERROR)
   {
     result = return_type::ERROR;
   }
 
-  if (activate_components_from_resource_storage(resource_storage_->sensors_, component_names) ==
-    return_type::ERROR)
+  if (execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::activate_hardware<Sensor>, resource_storage_.get(), _1),
+      resource_storage_->sensors_, component_names) == return_type::ERROR)
   {
     result = return_type::ERROR;
   }
 
-  if (activate_components_from_resource_storage(resource_storage_->systems_, component_names) ==
-    return_type::ERROR)
+  if (execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::activate_hardware<System>, resource_storage_.get(), _1),
+      resource_storage_->systems_, component_names) == return_type::ERROR)
   {
     result = return_type::ERROR;
   }
@@ -448,22 +517,27 @@ return_type ResourceManager::activate_components(const std::vector<std::string> 
 
 return_type ResourceManager::deactivate_components(const std::vector<std::string> & component_names)
 {
+  using std::placeholders::_1;
+
   return_type result = return_type::OK;
 
-  if (deactivate_components_from_resource_storage(resource_storage_->actuators_, component_names) ==
-    return_type::ERROR)
+  if (execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::deactivate_hardware<Actuator>, resource_storage_.get(), _1),
+      resource_storage_->actuators_, component_names) == return_type::ERROR)
   {
     result = return_type::ERROR;
   }
 
-  if (deactivate_components_from_resource_storage(resource_storage_->sensors_, component_names) ==
-    return_type::ERROR)
+  if (execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::deactivate_hardware<Sensor>, resource_storage_.get(), _1),
+      resource_storage_->sensors_, component_names) == return_type::ERROR)
   {
     result = return_type::ERROR;
   }
 
-  if (deactivate_components_from_resource_storage(resource_storage_->systems_, component_names) ==
-    return_type::ERROR)
+  if (execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::deactivate_hardware<System>, resource_storage_.get(), _1),
+      resource_storage_->systems_, component_names) == return_type::ERROR)
   {
     result = return_type::ERROR;
   }
