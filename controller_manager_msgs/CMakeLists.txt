@@ -15,7 +15,9 @@ set(msg_files
   msg/HardwareInterface.msg
 )
 set(srv_files
+  srv/CleanupHardwareComponent.srv
   srv/ConfigureController.srv
+  srv/ConfigureHardwareComponent.srv
   srv/ConfigureStartController.srv
   srv/ListControllers.srv
   srv/ListControllerTypes.srv

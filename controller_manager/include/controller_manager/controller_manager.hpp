@@ -24,7 +24,9 @@
 
 #include "controller_manager/controller_spec.hpp"
 #include "controller_manager/visibility_control.h"
+#include "controller_manager_msgs/srv/cleanup_hardware_component.hpp"
 #include "controller_manager_msgs/srv/configure_controller.hpp"
+#include "controller_manager_msgs/srv/configure_hardware_component.hpp"
 #include "controller_manager_msgs/srv/configure_start_controller.hpp"
 #include "controller_manager_msgs/srv/list_controller_types.hpp"
 #include "controller_manager_msgs/srv/list_controllers.hpp"
@@ -229,6 +231,17 @@ protected:
     std::shared_ptr<controller_manager_msgs::srv::ListHardwareComponents::Response> response);
 
   CONTROLLER_MANAGER_PUBLIC
+  void configure_hardware_component_srv_cb(
+    const std::shared_ptr<controller_manager_msgs::srv::ConfigureHardwareComponent::Request>
+      request,
+    std::shared_ptr<controller_manager_msgs::srv::ConfigureHardwareComponent::Response> response);
+
+  CONTROLLER_MANAGER_PUBLIC
+  void cleanup_hardware_component_srv_cb(
+    const std::shared_ptr<controller_manager_msgs::srv::CleanupHardwareComponent::Request> request,
+    std::shared_ptr<controller_manager_msgs::srv::CleanupHardwareComponent::Response> response);
+
+  CONTROLLER_MANAGER_PUBLIC
   void manage_hardware_activity_srv_cb(
     const std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Request> request,
     std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Response> response);
@@ -349,6 +362,10 @@ private:
     list_hardware_components_service_;
   rclcpp::Service<controller_manager_msgs::srv::ListHardwareInterfaces>::SharedPtr
     list_hardware_interfaces_service_;
+  rclcpp::Service<controller_manager_msgs::srv::ConfigureHardwareComponent>::SharedPtr
+    configure_hardware_component_service_;
+  rclcpp::Service<controller_manager_msgs::srv::CleanupHardwareComponent>::SharedPtr
+    cleanup_hardware_component_service_;
   rclcpp::Service<controller_manager_msgs::srv::ManageHardwareActivity>::SharedPtr
     manage_hardware_activity_service_;
 

@@ -161,6 +161,16 @@ void ControllerManager::init_services()
       "~/list_hardware_interfaces",
       std::bind(&ControllerManager::list_hardware_interfaces_srv_cb, this, _1, _2),
       rmw_qos_profile_services_default, best_effort_callback_group_);
+  configure_hardware_component_service_ =
+    create_service<controller_manager_msgs::srv::ConfigureHardwareComponent>(
+      "~/configure_hardware_component",
+      std::bind(&ControllerManager::configure_hardware_component_srv_cb, this, _1, _2),
+      rmw_qos_profile_services_default, best_effort_callback_group_);
+  cleanup_hardware_component_service_ =
+    create_service<controller_manager_msgs::srv::CleanupHardwareComponent>(
+      "~/cleanup_hardware_component",
+      std::bind(&ControllerManager::cleanup_hardware_component_srv_cb, this, _1, _2),
+      rmw_qos_profile_services_default, best_effort_callback_group_);
   manage_hardware_activity_service_ =
     create_service<controller_manager_msgs::srv::ManageHardwareActivity>(
       "~/manage_hardware_activity",
@@ -1181,6 +1191,20 @@ void ControllerManager::list_hardware_interfaces_srv_cb(
     response->command_interfaces.push_back(hwi);
   }
   RCLCPP_DEBUG(get_logger(), "list hardware interfaces service finished");
+}
+
+void ControllerManager::configure_hardware_component_srv_cb(
+  const std::shared_ptr<controller_manager_msgs::srv::ConfigureHardwareComponent::Request> request,
+  std::shared_ptr<controller_manager_msgs::srv::ConfigureHardwareComponent::Response> response)
+{
+  response->ok = true;
+}
+
+void ControllerManager::cleanup_hardware_component_srv_cb(
+  const std::shared_ptr<controller_manager_msgs::srv::CleanupHardwareComponent::Request> request,
+  std::shared_ptr<controller_manager_msgs::srv::CleanupHardwareComponent::Response> response)
+{
+  response->ok = true;
 }
 
 void ControllerManager::manage_hardware_activity_srv_cb(

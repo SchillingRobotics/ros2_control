@@ -532,6 +532,72 @@ auto execute_action_on_components_from_resource_storage =
     return result;
   };
 
+return_type ResourceManager::configure_components(const std::vector<std::string> & component_names)
+{
+  using std::placeholders::_1;
+
+  return_type result = return_type::OK;
+
+  if (
+    execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::configureure_hardware<Actuator>, resource_storage_.get(), _1),
+      resource_storage_->actuators_, component_names) == return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  if (
+    execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::configureure_hardware<Sensor>, resource_storage_.get(), _1),
+      resource_storage_->sensors_, component_names) == return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  if (
+    execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::configureure_hardware<System>, resource_storage_.get(), _1),
+      resource_storage_->systems_, component_names) == return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  return result;
+}
+
+return_type ResourceManager::cleanup_components(const std::vector<std::string> & component_names)
+{
+  using std::placeholders::_1;
+
+  return_type result = return_type::OK;
+
+  if (
+    execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::cleanup_hardware<Actuator>, resource_storage_.get(), _1),
+      resource_storage_->actuators_, component_names) == return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  if (
+    execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::cleanup_hardware<Sensor>, resource_storage_.get(), _1),
+      resource_storage_->sensors_, component_names) == return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  if (
+    execute_action_on_components_from_resource_storage(
+      std::bind(&ResourceStorage::cleanup_hardware<System>, resource_storage_.get(), _1),
+      resource_storage_->systems_, component_names) == return_type::ERROR)
+  {
+    result = return_type::ERROR;
+  }
+
+  return result;
+}
+
 return_type ResourceManager::activate_components(const std::vector<std::string> & component_names)
 {
   using std::placeholders::_1;
