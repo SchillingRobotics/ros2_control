@@ -249,6 +249,16 @@ public:
    */
   return_type cleanup_components(const std::vector<std::string> & component_names = {});
 
+  /// Shutdown hardware components.
+  /**
+   * Shutdown hardware components defined in the list. If empty, shutdown all components.
+   *
+   * \param[in] component_names vector of component names to shutdown. Default: empty.
+   * \return hardware_interface::retun_type::OK if all components are successfully shutdown and
+   *         hardware_interface::return_type::ERROR if at least one failed to shutdown.
+   */
+  return_type shutdown_components(const std::vector<std::string> & component_names = {});
+
   /// Activate hardware components.
   /**
    * Activate hardware components defined in the list. If empty, activate all components.

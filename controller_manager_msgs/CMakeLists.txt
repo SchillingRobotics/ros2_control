@@ -29,6 +29,7 @@ set(srv_files
   srv/LoadStartController.srv
   srv/ManageHardwareActivity.srv
   srv/ReloadControllerLibraries.srv
+  srv/ShutdownHardwareComponent.srv
   srv/SwitchController.srv
   srv/UnloadController.srv
 )

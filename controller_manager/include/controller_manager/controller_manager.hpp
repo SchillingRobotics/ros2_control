@@ -37,6 +37,7 @@
 #include "controller_manager_msgs/srv/load_start_controller.hpp"
 #include "controller_manager_msgs/srv/manage_hardware_activity.hpp"
 #include "controller_manager_msgs/srv/reload_controller_libraries.hpp"
+#include "controller_manager_msgs/srv/shutdown_hardware_component.hpp"
 #include "controller_manager_msgs/srv/switch_controller.hpp"
 #include "controller_manager_msgs/srv/unload_controller.hpp"
 
@@ -242,6 +243,11 @@ protected:
     std::shared_ptr<controller_manager_msgs::srv::CleanupHardwareComponent::Response> response);
 
   CONTROLLER_MANAGER_PUBLIC
+  void shutdown_hardware_component_srv_cb(
+    const std::shared_ptr<controller_manager_msgs::srv::ShutdownHardwareComponent::Request> request,
+    std::shared_ptr<controller_manager_msgs::srv::ShutdownHardwareComponent::Response> response);
+
+  CONTROLLER_MANAGER_PUBLIC
   void manage_hardware_activity_srv_cb(
     const std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Request> request,
     std::shared_ptr<controller_manager_msgs::srv::ManageHardwareActivity::Response> response);
@@ -366,6 +372,8 @@ private:
     configure_hardware_component_service_;
   rclcpp::Service<controller_manager_msgs::srv::CleanupHardwareComponent>::SharedPtr
     cleanup_hardware_component_service_;
+  rclcpp::Service<controller_manager_msgs::srv::ShutdownHardwareComponent>::SharedPtr
+    shutdown_hardware_component_service_;
   rclcpp::Service<controller_manager_msgs::srv::ManageHardwareActivity>::SharedPtr
     manage_hardware_activity_service_;
 
