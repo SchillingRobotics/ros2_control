@@ -7,6 +7,19 @@ There are three types of hardware Actuator, Sensor and System.
 For details on each type check `Hardware Components description <https://ros-controls.github.io/control.ros.org/getting_started.html#hardware-components>`_.
 
 
+Lifecycle of Hardware Components
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Initialization
+,,,,,,,,,,,,,,,
+Immediately after a plugin in loaded and object created with default constructor, ``on_init`` method will be called providing hardware URDF configuration using ``HardwareInfo`` structure.
+In this stage you should initialize all memory you need and prepare storage for interfaces.
+The resource manager will claim export of all interfaces after this and store them internally.
+
+Configuration
+,,,,,,,,,,,,,,
+
+
 Migration from Foxy to Galactic
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
