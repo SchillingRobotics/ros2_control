@@ -27,15 +27,6 @@ class RuckigJointLimiter : public limit_enforcement_plugins::JointLimiterInterfa
 {
 public:
   JOINT_LIMITS_PUBLIC RuckigJointLimiter();
-
-  JOINT_LIMITS_PUBLIC bool on_init() override;
-
-  JOINT_LIMITS_PUBLIC bool on_configure() override;
-
-  JOINT_LIMITS_PUBLIC bool on_enforce(
-    trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
-    trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states,
-    const rclcpp::Duration & dt) override;
 };
 
 }  // namespace ruckig_joint_limiter

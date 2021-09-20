@@ -52,31 +52,23 @@ public:
    */
   JOINT_LIMITS_PUBLIC virtual bool init(
     const std::vector<std::string> joint_names, const rclcpp::Node::SharedPtr & node,
-    const std::string & robot_description_topic = "/robot_description");
+    const std::string & robot_description_topic = "/robot_description")
+  {return true;}
 
-  JOINT_LIMITS_PUBLIC virtual bool configure() { return on_configure(); }
+  // TODO(destogl): Make these protected?
+  JOINT_LIMITS_PUBLIC virtual bool configure()
+  {
+    return true;
+  }
 
   JOINT_LIMITS_PUBLIC virtual bool enforce(
     trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
     trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states, const rclcpp::Duration & dt)
   {
-    // TODO(destogl): add checks if sizes of vectors and number of limits correspond.
-    return on_enforce(current_joint_states, desired_joint_states, dt);
+    return true;
   }
 
-  // TODO(destogl): Make those protected?
-  // Methods that each limiter implementation has to implement
-  JOINT_LIMITS_PUBLIC virtual bool on_init() { return true; }
-
-  JOINT_LIMITS_PUBLIC virtual bool on_configure() { return true; }
-
-  JOINT_LIMITS_PUBLIC virtual bool on_enforce(
-    trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
-    trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states,
-    const rclcpp::Duration & dt) = 0;
-
 protected:
-  std::vector<LimitsType> limit_enforcement_plugins_;
   rclcpp::Node::SharedPtr node_;
 };
 

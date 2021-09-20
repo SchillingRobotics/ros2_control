@@ -14,7 +14,9 @@
 
 /// \author Denis Stogl
 
-// Simple joint limiter using a clamping approach. May violate acceleration and jerk limits.
+// Simple joint limiter using a clamping approach.
+// May violate acceleration and jerk limits.
+// May not continue on the intended path.
 
 #ifndef JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
 #define JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
@@ -32,10 +34,13 @@ class SimpleJointLimiter : public JointLimiterInterface<JointLimits>
 public:
   JOINT_LIMITS_PUBLIC SimpleJointLimiter();
 
-  JOINT_LIMITS_PUBLIC bool on_enforce(
+  JOINT_LIMITS_PUBLIC bool enforce(
     trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
     trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states,
     const rclcpp::Duration & dt) override;
+
+private:
+  std::vector<LimitsType> vector_of_clamps_;
 };
 
 }  // namespace limit_enforcement_plugins

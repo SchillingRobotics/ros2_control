@@ -3,7 +3,7 @@
          type="limit_enforcement_plugins::SimpleJointLimiter<limit_enforcement_plugins::JointLimits>"
          base_class_type="limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>">
     <description>
-      Simple joint limiter using a clamping approach. May violate acceleration and jerk limits.
+      Simple joint limiter using a clamping approach. May violate acceleration and jerk limits. May not follow the intended path.
     </description>
   </class>
 </library>

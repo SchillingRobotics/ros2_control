@@ -26,28 +26,6 @@ RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::RuckigJointLimiter()
 {
 }
 
-template <>
-bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::on_init()
-{
-  return true;
-}
-
-template <>
-bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::on_configure()
-{
-  return true;
-}
-
-template <>
-bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::on_enforce(
-  trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
-  trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states, const rclcpp::Duration & dt)
-{
-  desired_joint_states = current_joint_states;
-
-  return true;
-}
-
 }  // namespace ruckig_joint_limiter
 
 #include "pluginlib/class_list_macros.hpp"
