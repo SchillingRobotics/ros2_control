@@ -40,6 +40,8 @@ public:
 private:
   // Store joint limit data
   std::vector<LimitsType> joint_limits_;
+  size_t num_dof_;
+  bool received_initial_state_ = false;
   // Ruckig algorithm
   std::shared_ptr<ruckig::Ruckig<0>> ruckig_;
   std::shared_ptr<ruckig::InputParameter<0>> ruckig_input_;
