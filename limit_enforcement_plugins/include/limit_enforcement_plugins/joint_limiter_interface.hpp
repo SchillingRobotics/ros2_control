@@ -33,10 +33,6 @@ template <typename LimitsType>
 class JointLimiterInterface
 {
 public:
-  JOINT_LIMITS_PUBLIC JointLimiterInterface() = default;
-
-  JOINT_LIMITS_PUBLIC virtual ~JointLimiterInterface() = default;
-
   /// Initialization of every JointLimiter.
   /**
    * Initialization of JointLimiter for defined joints with their names.
@@ -53,7 +49,9 @@ public:
   JOINT_LIMITS_PUBLIC virtual bool init(
     const std::vector<std::string> joint_names, const rclcpp::Node::SharedPtr & node,
     const std::string & robot_description_topic = "/robot_description")
-  {return true;}
+  {
+    return true;
+  }
 
   // TODO(destogl): Make these protected?
   JOINT_LIMITS_PUBLIC virtual bool configure()
@@ -67,9 +65,6 @@ public:
   {
     return true;
   }
-
-protected:
-  rclcpp::Node::SharedPtr node_;
 };
 
 }  // namespace limit_enforcement_plugins

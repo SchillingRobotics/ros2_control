@@ -11,19 +11,6 @@ find_package(rclcpp REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(ruckig REQUIRED)
 
-# add_library(joint_limiter_interface SHARED src/joint_limiter_interface.cpp)
-# target_include_directories(
-#   joint_limiter_interface
-#   PRIVATE
-#   include)
-# ament_target_dependencies(
-#   joint_limiter_interface
-#   rclcpp
-# )
-# # Causes the visibility macros to use dllexport rather than dllimport,
-# # which is appropriate when building the dll but not consuming it.
-# target_compile_definitions(joint_limiter_interface PRIVATE "CONTROLLER_INTERFACE_BUILDING_DLL")
-
 add_library(
   simple_joint_limiter
   SHARED

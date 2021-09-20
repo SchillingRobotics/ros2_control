@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// \authors Andy Zelenak, Denis Stogl
+/// \authors Andy Zelenak
 
 #include "ruckig_joint_limiter/ruckig_joint_limiter.hpp"
 
@@ -21,9 +21,19 @@
 namespace ruckig_joint_limiter
 {
 template <>
-RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::RuckigJointLimiter()
-: limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>()
+bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::init(
+  const std::vector<std::string> joint_names, const rclcpp::Node::SharedPtr & node,
+  const std::string & robot_description_topic)
 {
+  return true;
+}
+
+template <>
+bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::enforce(
+  trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
+  trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states, const rclcpp::Duration & dt)
+{
+  return true;
 }
 
 }  // namespace ruckig_joint_limiter

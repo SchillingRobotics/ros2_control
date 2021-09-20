@@ -32,7 +32,9 @@ template <typename LimitsType>
 class SimpleJointLimiter : public JointLimiterInterface<JointLimits>
 {
 public:
-  JOINT_LIMITS_PUBLIC SimpleJointLimiter();
+  JOINT_LIMITS_PUBLIC bool init(
+    const std::vector<std::string> joint_names, const rclcpp::Node::SharedPtr & node,
+    const std::string & robot_description_topic = "/robot_description") override;
 
   JOINT_LIMITS_PUBLIC bool enforce(
     trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
@@ -40,7 +42,8 @@ public:
     const rclcpp::Duration & dt) override;
 
 private:
-  std::vector<LimitsType> vector_of_clamps_;
+  std::vector<LimitsType> joint_limits_;
+  rclcpp::Node::SharedPtr node_;
 };
 
 }  // namespace limit_enforcement_plugins
