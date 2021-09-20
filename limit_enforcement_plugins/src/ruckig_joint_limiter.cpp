@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// \authors Nathan Brooks, Denis Stogl
+/// \authors Andy Zelenak, Denis Stogl
 
 #include "ruckig_joint_limiter/ruckig_joint_limiter.hpp"
 

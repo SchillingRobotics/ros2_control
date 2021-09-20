@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// \author Denis Stogl
+/// \author Andy Zelenak, Denis Stogl
 
 #ifndef RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_
 #define RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_

@@ -3,7 +3,7 @@
          type="limit_enforcement_plugins::SimpleJointLimiter<limit_enforcement_plugins::JointLimits>"
          base_class_type="limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>">
     <description>
-      Simple joint limiter using clamping approach.
+      Simple joint limiter using a clamping approach. May violate acceleration and jerk limits.
     </description>
   </class>
 </library>
@@ -13,7 +13,7 @@
          type="ruckig_joint_limiter::RuckigJointLimiter<limit_enforcement_plugins::JointLimits>"
          base_class_type="limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>">
     <description>
-      Simple joint limiter using clamping approach.
+      Jerk-limited smoothing with the Ruckig library.
     </description>
   </class>
 </library>

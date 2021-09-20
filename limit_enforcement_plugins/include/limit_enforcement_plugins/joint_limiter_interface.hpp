@@ -14,6 +14,8 @@
 
 /// \author Denis Stogl
 
+// A base class for joint limit plugins.
+
 #ifndef JOINT_LIMITS__JOINT_LIMITER_INTERFACE_HPP_
 #define JOINT_LIMITS__JOINT_LIMITER_INTERFACE_HPP_
 

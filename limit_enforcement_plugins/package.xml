@@ -1,7 +1,7 @@
 <package format="3">
   <name>limit_enforcement_plugins</name>
   <version>0.0.0</version>
-  <description>Package for with interfaces for handling of  joint limits for use in controllers or in hardware. It also implements simple, default joint limit strategy by camping the values.</description>
+  <description>Package for handling of joint limits for use in controllers or in hardware. It also implements a simple, default joint limit strategy by clamping the values.</description>
 
   <maintainer email="bence.magyar.robotics@gmail.com">Bence Magyar</maintainer>
   <maintainer email="jordan.palacios@pal-robotics.com">Jordan Palacios</maintainer>

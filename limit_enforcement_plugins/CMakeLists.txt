@@ -9,6 +9,7 @@ find_package(ament_cmake REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcutils REQUIRED)
+find_package(ruckig REQUIRED)
 
 add_library(joint_limiter_interface SHARED src/joint_limiter_interface.cpp)
 target_include_directories(
@@ -116,6 +117,7 @@ endif()
 ament_export_dependencies(
   rclcpp
   rcutils
+  ruckig
 )
 
 ament_export_include_directories(

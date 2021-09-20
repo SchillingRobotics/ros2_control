@@ -14,6 +14,8 @@
 
 /// \author Denis Stogl
 
+// Simple joint limiter using a clamping approach. May violate acceleration and jerk limits.
+
 #ifndef JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
 #define JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
 
