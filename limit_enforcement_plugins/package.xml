@@ -1,5 +1,5 @@
 <package format="3">
-  <name>joint_limits</name>
+  <name>limit_enforcement_plugins</name>
   <version>0.0.0</version>
   <description>Package for with interfaces for handling of  joint limits for use in controllers or in hardware. It also implements simple, default joint limit strategy by camping the values.</description>
 

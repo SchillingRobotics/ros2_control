@@ -14,21 +14,23 @@
 
 /// \author Denis Stogl
 
-#ifndef JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
-#define JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
+#ifndef RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_
+#define RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_
 
-#include <string>
+#include "limit_enforcement_plugins/joint_limiter_interface.hpp"
+#include "limit_enforcement_plugins/joint_limits.hpp"
 
-#include "joint_limits/joint_limiter_interface.hpp"
-#include "joint_limits/joint_limits.hpp"
-
-namespace joint_limits
+namespace ruckig_joint_limiter
 {
 template <typename LimitsType>
-class SimpleJointLimiter : public JointLimiterInterface<JointLimits>
+class RuckigJointLimiter : public limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>
 {
 public:
-  JOINT_LIMITS_PUBLIC SimpleJointLimiter();
+  JOINT_LIMITS_PUBLIC RuckigJointLimiter();
+
+  JOINT_LIMITS_PUBLIC bool on_init() override;
+
+  JOINT_LIMITS_PUBLIC bool on_configure() override;
 
   JOINT_LIMITS_PUBLIC bool on_enforce(
     trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
@@ -36,6 +38,6 @@ public:
     const rclcpp::Duration & dt) override;
 };
 
-}  // namespace joint_limits
+}  // namespace ruckig_joint_limiter
 
-#endif  // JOINT_LIMITS__SIMPLE_JOINT_LIMITER_HPP_
+#endif  // RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_

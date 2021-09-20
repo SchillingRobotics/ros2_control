@@ -14,7 +14,7 @@
 
 /// \authors Nathan Brooks, Denis Stogl
 
-#include "joint_limits/simple_joint_limiter.hpp"
+#include "limit_enforcement_plugins/simple_joint_limiter.hpp"
 
 #include <algorithm>
 
@@ -23,11 +23,11 @@
 
 constexpr size_t ROS_LOG_THROTTLE_PERIOD = 1 * 1000;  // Milliseconds to throttle logs inside loops
 
-namespace joint_limits
+namespace limit_enforcement_plugins
 {
 template <>
 SimpleJointLimiter<JointLimits>::SimpleJointLimiter()
-: joint_limits::JointLimiterInterface<JointLimits>()
+: limit_enforcement_plugins::JointLimiterInterface<JointLimits>()
 {
 }
 
@@ -36,7 +36,7 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
   trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
   trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states, const rclcpp::Duration & dt)
 {
-  auto num_joints = joint_limits_.size();
+  auto num_joints = limit_enforcement_plugins_.size();
 
   if (current_joint_states.velocities.empty())
   {
@@ -47,15 +47,15 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
   // Clamp velocities to limits
   for (auto index = 0u; index < num_joints; ++index)
   {
-    if (joint_limits_[index].has_velocity_limits)
+    if (limit_enforcement_plugins_[index].has_velocity_limits)
     {
-      if (std::abs(desired_joint_states.velocities[index]) > joint_limits_[index].max_velocity)
+      if (std::abs(desired_joint_states.velocities[index]) > limit_enforcement_plugins_[index].max_velocity)
       {
         RCLCPP_WARN_STREAM_THROTTLE(
           node_->get_logger(), *node_->get_clock(), ROS_LOG_THROTTLE_PERIOD,
           "Joint(s) would exceed velocity limits, limiting");
         desired_joint_states.velocities[index] =
-          copysign(joint_limits_[index].max_velocity, desired_joint_states.velocities[index]);
+          copysign(limit_enforcement_plugins_[index].max_velocity, desired_joint_states.velocities[index]);
         double accel =
           (desired_joint_states.velocities[index] - current_joint_states.velocities[index]) /
           dt.seconds();
@@ -71,24 +71,24 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
   // Clamp acclerations to limits
   for (auto index = 0u; index < num_joints; ++index)
   {
-    if (joint_limits_[index].has_acceleration_limits)
+    if (limit_enforcement_plugins_[index].has_acceleration_limits)
     {
       double accel =
         (desired_joint_states.velocities[index] - current_joint_states.velocities[index]) /
         dt.seconds();
-      if (std::abs(accel) > joint_limits_[index].max_acceleration)
+      if (std::abs(accel) > limit_enforcement_plugins_[index].max_acceleration)
       {
         RCLCPP_WARN_STREAM_THROTTLE(
           node_->get_logger(), *node_->get_clock(), ROS_LOG_THROTTLE_PERIOD,
           "Joint(s) would exceed acceleration limits, limiting");
         desired_joint_states.velocities[index] =
           current_joint_states.velocities[index] +
-          copysign(joint_limits_[index].max_acceleration, accel) * dt.seconds();
+          copysign(limit_enforcement_plugins_[index].max_acceleration, accel) * dt.seconds();
         // Recompute position
         desired_joint_states.positions[index] =
           current_joint_states.positions[index] +
           current_joint_states.velocities[index] * dt.seconds() +
-          0.5 * copysign(joint_limits_[index].max_acceleration, accel) * dt.seconds() *
+          0.5 * copysign(limit_enforcement_plugins_[index].max_acceleration, accel) * dt.seconds() *
             dt.seconds();
       }
     }
@@ -102,7 +102,7 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
   bool position_limit_triggered = false;
   for (auto index = 0u; index < num_joints; ++index)
   {
-    if (joint_limits_[index].has_acceleration_limits)
+    if (limit_enforcement_plugins_[index].has_acceleration_limits)
     {
       // delta_x = (v2*v2 - v1*v1) / (2*a)
       // stopping_distance = (- v1*v1) / (2*max_acceleration)
@@ -111,16 +111,16 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
       // coming to a rest.
       double stopping_distance = std::abs(
         (-desired_joint_states.velocities[index] * desired_joint_states.velocities[index]) /
-        (2 * joint_limits_[index].max_acceleration));
+        (2 * limit_enforcement_plugins_[index].max_acceleration));
       // Check that joint limits are beyond stopping_distance and desired_velocity is towards
       // that limit
       // TODO(anyone): Should we consider sign on acceleration here?
       if (
         (desired_joint_states.velocities[index] < 0 &&
-         (current_joint_states.positions[index] - joint_limits_[index].min_position <
+         (current_joint_states.positions[index] - limit_enforcement_plugins_[index].min_position <
           stopping_distance)) ||
         (desired_joint_states.velocities[index] > 0 &&
-         (joint_limits_[index].max_position - current_joint_states.positions[index] <
+         (limit_enforcement_plugins_[index].max_position - current_joint_states.positions[index] <
           stopping_distance)))
       {
         RCLCPP_WARN_STREAM_THROTTLE(
@@ -139,14 +139,14 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
     // In Cartesian admittance mode, stop all joints if one would exceed limit
     for (auto index = 0u; index < num_joints; ++index)
     {
-      if (joint_limits_[index].has_acceleration_limits)
+      if (limit_enforcement_plugins_[index].has_acceleration_limits)
       {
         // Compute accel to stop
         // Here we aren't explicitly maximally decelerating, but for joints near their limits this
         // should still result in max decel being used
         double accel_to_stop = -current_joint_states.velocities[index] / dt.seconds();
         double limited_accel = copysign(
-          std::min(std::abs(accel_to_stop), joint_limits_[index].max_acceleration), accel_to_stop);
+          std::min(std::abs(accel_to_stop), limit_enforcement_plugins_[index].max_acceleration), accel_to_stop);
 
         desired_joint_states.velocities[index] =
           current_joint_states.velocities[index] + limited_accel * dt.seconds();
@@ -161,10 +161,10 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
   return true;
 }
 
-}  // namespace joint_limits
+}  // namespace limit_enforcement_plugins
 
 #include "pluginlib/class_list_macros.hpp"
 
 PLUGINLIB_EXPORT_CLASS(
-  joint_limits::SimpleJointLimiter<joint_limits::JointLimits>,
-  joint_limits::JointLimiterInterface<joint_limits::JointLimits>)
+  limit_enforcement_plugins::SimpleJointLimiter<limit_enforcement_plugins::JointLimits>,
+  limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(joint_limits)
+project(limit_enforcement_plugins)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra)
@@ -69,7 +69,7 @@ ament_target_dependencies(
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(ruckig_joint_limiter PRIVATE "CONTROLLER_INTERFACE_BUILDING_DLL")
 
-pluginlib_export_plugin_description_file(joint_limits joint_limiters.xml)
+pluginlib_export_plugin_description_file(limit_enforcement_plugins joint_limiters.xml)
 
 install(DIRECTORY include/
   DESTINATION include
@@ -90,9 +90,9 @@ if(BUILD_TESTING)
   find_package(pluginlib REQUIRED)
   find_package(rclcpp REQUIRED)
 
-  #ament_add_gmock(joint_limits_test test/joint_limits_test.cpp)
-  #target_include_directories(joint_limits_test PUBLIC include)
-  #target_link_libraries(joint_limits_test joint_limits)
+  #ament_add_gmock(limit_enforcement_plugins_test test/limit_enforcement_plugins_test.cpp)
+  #target_include_directories(limit_enforcement_plugins_test PUBLIC include)
+  #target_link_libraries(limit_enforcement_plugins_test limit_enforcement_plugins)
 
   ament_add_gmock(test_simple_joint_limiter test/test_simple_joint_limiter.cpp)
   target_include_directories(test_simple_joint_limiter PRIVATE include)

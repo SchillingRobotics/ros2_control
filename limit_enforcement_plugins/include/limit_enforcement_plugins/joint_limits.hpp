@@ -21,7 +21,7 @@
 #include <sstream>
 #include <string>
 
-namespace joint_limits
+namespace limit_enforcement_plugins
 {
 struct JointLimits
 {
@@ -128,6 +128,6 @@ struct SoftJointLimits
   double k_velocity;
 };
 
-}  // namespace joint_limits
+}  // namespace limit_enforcement_plugins
 
 #endif  // JOINT_LIMITS__JOINT_LIMITS_HPP_

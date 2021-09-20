@@ -1,0 +1,19 @@
+<library path="simple_joint_limiter">
+  <class name="limit_enforcement_plugins/SimpleJointLimiter"
+         type="limit_enforcement_plugins::SimpleJointLimiter<limit_enforcement_plugins::JointLimits>"
+         base_class_type="limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>">
+    <description>
+      Simple joint limiter using clamping approach.
+    </description>
+  </class>
+</library>
+
+<library path="ruckig_joint_limiter">
+  <class name="ruckig_joint_limiter/RuckigJointLimiter"
+         type="ruckig_joint_limiter::RuckigJointLimiter<limit_enforcement_plugins::JointLimits>"
+         base_class_type="limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>">
+    <description>
+      Simple joint limiter using clamping approach.
+    </description>
+  </class>
+</library>

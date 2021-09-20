@@ -21,25 +21,25 @@
 namespace ruckig_joint_limiter
 {
 template <>
-RuckigJointLimiter<joint_limits::JointLimits>::RuckigJointLimiter()
-: joint_limits::JointLimiterInterface<joint_limits::JointLimits>()
+RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::RuckigJointLimiter()
+: limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>()
 {
 }
 
 template <>
-bool RuckigJointLimiter<joint_limits::JointLimits>::on_init()
-{
-  return true;
-}
-
-template <>
-bool RuckigJointLimiter<joint_limits::JointLimits>::on_configure()
+bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::on_init()
 {
   return true;
 }
 
 template <>
-bool RuckigJointLimiter<joint_limits::JointLimits>::on_enforce(
+bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::on_configure()
+{
+  return true;
+}
+
+template <>
+bool RuckigJointLimiter<limit_enforcement_plugins::JointLimits>::on_enforce(
   trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
   trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states, const rclcpp::Duration & dt)
 {
@@ -53,5 +53,5 @@ bool RuckigJointLimiter<joint_limits::JointLimits>::on_enforce(
 #include "pluginlib/class_list_macros.hpp"
 
 PLUGINLIB_EXPORT_CLASS(
-  ruckig_joint_limiter::RuckigJointLimiter<joint_limits::JointLimits>,
-  joint_limits::JointLimiterInterface<joint_limits::JointLimits>)
+  ruckig_joint_limiter::RuckigJointLimiter<limit_enforcement_plugins::JointLimits>,
+  limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>)

@@ -14,15 +14,15 @@
 
 /// \author Denis Stogl
 
-#include "joint_limits/joint_limiter_interface.hpp"
+#include "limit_enforcement_plugins/joint_limiter_interface.hpp"
 
 #include <string>
 #include <vector>
 
-#include "joint_limits/joint_limits_rosparam.hpp"
+#include "limit_enforcement_plugins/joint_limits_rosparam.hpp"
 
 // TODO(anyone): Add handing of SoftLimits
-namespace joint_limits
+namespace limit_enforcement_plugins
 {
 template <>
 bool JointLimiterInterface<JointLimits>::init(
@@ -30,7 +30,7 @@ bool JointLimiterInterface<JointLimits>::init(
   const std::string & /*robot_description_topic*/)
 {
   auto number_of_joints = joint_names.size();
-  joint_limits_.resize(number_of_joints);
+  limit_enforcement_plugins_.resize(number_of_joints);
   node_ = node;
 
   bool result = true;
@@ -48,7 +48,7 @@ bool JointLimiterInterface<JointLimits>::init(
       result = false;
       break;
     }
-    if (!joint_limits::get_joint_limits(joint_names[i], node, joint_limits_[i]))
+    if (!limit_enforcement_plugins::get_limit_enforcement_plugins(joint_names[i], node, limit_enforcement_plugins_[i]))
     {
       RCLCPP_ERROR(
         node->get_logger(), "JointLimiter: Joint '%s': getting parameters has failed",
@@ -58,7 +58,7 @@ bool JointLimiterInterface<JointLimits>::init(
     }
     RCLCPP_INFO(
       node->get_logger(), "Joint '%s':\n  %s", joint_names[i].c_str(),
-      joint_limits_[i].to_string().c_str());
+      limit_enforcement_plugins_[i].to_string().c_str());
   }
 
   if (result)
@@ -69,4 +69,4 @@ bool JointLimiterInterface<JointLimits>::init(
   return result;
 }
 
-}  // namespace joint_limits
+}  // namespace limit_enforcement_plugins

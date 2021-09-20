@@ -20,12 +20,12 @@
 #include <string>
 #include <vector>
 
-#include "joint_limits/joint_limits.hpp"
-#include "joint_limits/visibility_control.h"
+#include "limit_enforcement_plugins/joint_limits.hpp"
+#include "limit_enforcement_plugins/visibility_control.h"
 #include "rclcpp/node.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
-namespace joint_limits
+namespace limit_enforcement_plugins
 {
 template <typename LimitsType>
 class JointLimiterInterface
@@ -74,10 +74,10 @@ public:
     const rclcpp::Duration & dt) = 0;
 
 protected:
-  std::vector<LimitsType> joint_limits_;
+  std::vector<LimitsType> limit_enforcement_plugins_;
   rclcpp::Node::SharedPtr node_;
 };
 
-}  // namespace joint_limits
+}  // namespace limit_enforcement_plugins
 
 #endif  // JOINT_LIMITS__JOINT_LIMITER_INTERFACE_HPP_

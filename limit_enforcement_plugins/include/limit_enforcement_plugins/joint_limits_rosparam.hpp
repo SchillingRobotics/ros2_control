@@ -20,14 +20,14 @@
 #include <limits>
 #include <string>
 
-#include "joint_limits/joint_limits.hpp"
+#include "limit_enforcement_plugins/joint_limits.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-namespace joint_limits
+namespace limit_enforcement_plugins
 {
 inline bool declare_parameters(const std::string & joint_name, const rclcpp::Node::SharedPtr & node)
 {
-  const std::string param_base_name = "joint_limits." + joint_name;
+  const std::string param_base_name = "limit_enforcement_plugins." + joint_name;
   try
   {
     node->declare_parameter<bool>(param_base_name + ".has_position_limits", false);
@@ -73,7 +73,7 @@ inline bool declare_parameters(const std::string & joint_name, const rclcpp::Nod
  * It is assumed that the following parameter structure is followed on the provided NodeHandle. Unspecified parameters
  * are simply not added to the joint limits specification.
  * \code
- * joint_limits:
+ * limit_enforcement_plugins:
  *   foo_joint:
  *     has_position_limits: true
  *     min_position: 0.0
@@ -99,12 +99,12 @@ inline bool declare_parameters(const std::string & joint_name, const rclcpp::Nod
  * \param[in] node NodeHandle where the joint limits are specified.
  * \param[out] limits Where joint limit data gets written into. Limits specified in the parameter server will overwrite
  * existing values. Values in \p limits not specified in the parameter server remain unchanged.
- * \return True if a limits specification is found (ie. the \p joint_limits/joint_name parameter exists in \p node), false otherwise.
+ * \return True if a limits specification is found (ie. the \p limit_enforcement_plugins/joint_name parameter exists in \p node), false otherwise.
  */
-inline bool get_joint_limits(
+inline bool get_limit_enforcement_plugins(
   const std::string & joint_name, const rclcpp::Node::SharedPtr & node, JointLimits & limits)
 {
-  const std::string param_base_name = "joint_limits." + joint_name;
+  const std::string param_base_name = "limit_enforcement_plugins." + joint_name;
   try
   {
     if (
@@ -242,7 +242,7 @@ inline bool get_joint_limits(
  * It is assumed that the following parameter structure is followed on the provided NodeHandle. Only completely specified soft
  * joint limits specifications will be considered valid.
  * \code
- * joint_limits:
+ * limit_enforcement_plugins:
  *   foo_joint:
  *     soft_lower_limit: 0.0
  *     soft_upper_limit: 1.0
@@ -257,13 +257,13 @@ inline bool get_joint_limits(
  * \param[out] soft_limits Where soft joint limit data gets written into. Limits specified in the parameter server will overwrite
  * existing values.
  * \return True if a complete soft limits specification is found (ie. if all \p k_position, \p k_velocity, \p soft_lower_limit and
- * \p soft_upper_limit exist in \p joint_limits/joint_name namespace), false otherwise.
+ * \p soft_upper_limit exist in \p limit_enforcement_plugins/joint_name namespace), false otherwise.
  */
-inline bool get_joint_limits(
+inline bool get_limit_enforcement_plugins(
   const std::string & joint_name, const rclcpp::Node::SharedPtr & node,
   SoftJointLimits & soft_limits)
 {
-  const std::string param_base_name = "joint_limits." + joint_name;
+  const std::string param_base_name = "limit_enforcement_plugins." + joint_name;
   try
   {
     if (
@@ -308,6 +308,6 @@ inline bool get_joint_limits(
   return false;
 }
 
-}  // namespace joint_limits
+}  // namespace limit_enforcement_plugins
 
 #endif  // JOINT_LIMITS__JOINT_LIMITS_ROSPARAM_HPP_
