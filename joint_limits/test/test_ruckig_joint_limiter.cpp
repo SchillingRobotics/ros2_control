@@ -30,10 +30,10 @@ TEST(TestLoadSimpleJointLimiter, load_limiter)
 
   using JointLimiter = joint_limits::JointLimiterInterface<joint_limits::JointLimits>;
   pluginlib::ClassLoader<JointLimiter> joint_limiter_loader(
-    "joint_limits", "joint_limits::JointLimiterInterface");
+    "joint_limits", "joint_limits::JointLimiterInterface<joint_limits::JointLimits>");
 
   std::unique_ptr<JointLimiter> joint_limiter;
-  std::string joint_limiter_type = "rucking_joint_limiter::RuckingJointLimiter";
+  std::string joint_limiter_type = "ruckig_joint_limiter/RuckigJointLimiter";
 
   ASSERT_NO_THROW(
     joint_limiter = std::unique_ptr<JointLimiter>(

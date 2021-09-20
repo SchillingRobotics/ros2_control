@@ -14,32 +14,32 @@
 
 /// \authors Nathan Brooks, Denis Stogl
 
-#include "rucking_joint_limiter/rucking_joint_limiter.hpp"
+#include "ruckig_joint_limiter/ruckig_joint_limiter.hpp"
 
 #include <string>
 
-namespace rucking_joint_limiter
+namespace ruckig_joint_limiter
 {
 template <>
-RuckingJointLimiter<joint_limits::JointLimits>::RuckingJointLimiter()
+RuckigJointLimiter<joint_limits::JointLimits>::RuckigJointLimiter()
 : joint_limits::JointLimiterInterface<joint_limits::JointLimits>()
 {
 }
 
 template <>
-bool RuckingJointLimiter<joint_limits::JointLimits>::on_init()
+bool RuckigJointLimiter<joint_limits::JointLimits>::on_init()
 {
   return true;
 }
 
 template <>
-bool RuckingJointLimiter<joint_limits::JointLimits>::on_configure()
+bool RuckigJointLimiter<joint_limits::JointLimits>::on_configure()
 {
   return true;
 }
 
 template <>
-bool RuckingJointLimiter<joint_limits::JointLimits>::on_enforce(
+bool RuckigJointLimiter<joint_limits::JointLimits>::on_enforce(
   trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states,
   trajectory_msgs::msg::JointTrajectoryPoint & desired_joint_states, const rclcpp::Duration & dt)
 {
@@ -48,10 +48,10 @@ bool RuckingJointLimiter<joint_limits::JointLimits>::on_enforce(
   return true;
 }
 
-}  // namespace rucking_joint_limiter
+}  // namespace ruckig_joint_limiter
 
 #include "pluginlib/class_list_macros.hpp"
 
 PLUGINLIB_EXPORT_CLASS(
-  rucking_joint_limiter::RuckingJointLimiter<joint_limits::JointLimits>,
+  ruckig_joint_limiter::RuckigJointLimiter<joint_limits::JointLimits>,
   joint_limits::JointLimiterInterface<joint_limits::JointLimits>)

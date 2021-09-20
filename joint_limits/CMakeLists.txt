@@ -47,27 +47,27 @@ ament_target_dependencies(
 target_compile_definitions(simple_joint_limiter PRIVATE "CONTROLLER_INTERFACE_BUILDING_DLL")
 
 add_library(
-  rucking_joint_limiter
+  ruckig_joint_limiter
   SHARED
-  src/rucking_joint_limiter.cpp
+  src/ruckig_joint_limiter.cpp
 )
 target_include_directories(
-  rucking_joint_limiter
+  ruckig_joint_limiter
   PRIVATE
   include
 )
 target_link_libraries(
-  rucking_joint_limiter
+  ruckig_joint_limiter
   joint_limiter_interface
 )
 ament_target_dependencies(
-  rucking_joint_limiter
+  ruckig_joint_limiter
   rclcpp
   rcutils
 )
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(rucking_joint_limiter PRIVATE "CONTROLLER_INTERFACE_BUILDING_DLL")
+target_compile_definitions(ruckig_joint_limiter PRIVATE "CONTROLLER_INTERFACE_BUILDING_DLL")
 
 pluginlib_export_plugin_description_file(joint_limits joint_limiters.xml)
 
@@ -78,7 +78,7 @@ install(DIRECTORY include/
 install(
   TARGETS
     joint_limiter_interface
-    rucking_joint_limiter
+    ruckig_joint_limiter
     simple_joint_limiter
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -103,11 +103,11 @@ if(BUILD_TESTING)
     rclcpp
   )
 
-  ament_add_gmock(test_rucking_joint_limiter test/test_rucking_joint_limiter.cpp)
-  target_include_directories(test_rucking_joint_limiter PRIVATE include)
-  target_link_libraries(test_rucking_joint_limiter joint_limiter_interface)
+  ament_add_gmock(test_ruckig_joint_limiter test/test_ruckig_joint_limiter.cpp)
+  target_include_directories(test_ruckig_joint_limiter PRIVATE include)
+  target_link_libraries(test_ruckig_joint_limiter joint_limiter_interface)
   ament_target_dependencies(
-    test_rucking_joint_limiter
+    test_ruckig_joint_limiter
     pluginlib
     rclcpp
   )
@@ -124,7 +124,7 @@ ament_export_include_directories(
 
 ament_export_libraries(
   joint_limiter_interface
-  rucking_joint_limiter
+  ruckig_joint_limiter
   simple_joint_limiter
 )
 

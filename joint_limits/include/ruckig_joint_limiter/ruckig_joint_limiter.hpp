@@ -14,19 +14,19 @@
 
 /// \author Denis Stogl
 
-#ifndef RUCKING_JOINT_LIMITER__RUCKING_JOINT_LIMITER_HPP_
-#define RUCKING_JOINT_LIMITER__RUCKING_JOINT_LIMITER_HPP_
+#ifndef RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_
+#define RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_
 
 #include "joint_limits/joint_limiter_interface.hpp"
 #include "joint_limits/joint_limits.hpp"
 
-namespace rucking_joint_limiter
+namespace ruckig_joint_limiter
 {
 template <typename LimitsType>
-class RuckingJointLimiter : public joint_limits::JointLimiterInterface<joint_limits::JointLimits>
+class RuckigJointLimiter : public joint_limits::JointLimiterInterface<joint_limits::JointLimits>
 {
 public:
-  JOINT_LIMITS_PUBLIC RuckingJointLimiter();
+  JOINT_LIMITS_PUBLIC RuckigJointLimiter();
 
   JOINT_LIMITS_PUBLIC bool on_init() override;
 
@@ -38,6 +38,6 @@ public:
     const rclcpp::Duration & dt) override;
 };
 
-}  // namespace rucking_joint_limiter
+}  // namespace ruckig_joint_limiter
 
-#endif  // RUCKING_JOINT_LIMITER__RUCKING_JOINT_LIMITER_HPP_
+#endif  // RUCKIG_JOINT_LIMITER__RUCKIG_JOINT_LIMITER_HPP_
