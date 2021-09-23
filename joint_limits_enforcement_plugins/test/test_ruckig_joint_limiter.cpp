@@ -19,8 +19,8 @@
 #include <memory>
 #include <string>
 
-#include "limit_enforcement_plugins/joint_limiter_interface.hpp"
-#include "limit_enforcement_plugins/joint_limits.hpp"
+#include "joint_limits/joint_limiter_interface.hpp"
+#include "joint_limits/joint_limits.hpp"
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/executor.hpp"
 
@@ -28,13 +28,15 @@ TEST(TestLoadSimpleJointLimiter, load_limiter)
 {
   rclcpp::init(0, nullptr);
 
-  using JointLimiter = limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>;
+  using JointLimiter = joint_limits::JointLimiterInterface<joint_limits::JointLimits>;
   pluginlib::ClassLoader<JointLimiter> joint_limiter_loader(
-    "limit_enforcement_plugins", "limit_enforcement_plugins::JointLimiterInterface<limit_enforcement_plugins::JointLimits>");
+    "joint_limits", "joint_limits::JointLimiterInterface<joint_limits::JointLimits>");
 
   std::unique_ptr<JointLimiter> joint_limiter;
-  std::string joint_limiter_type = "limit_enforcement_plugins/SimpleJointLimiter";
+  std::string joint_limiter_type = "ruckig_joint_limiter/RuckigJointLimiter";
 
+  joint_limiter =
+    std::unique_ptr<JointLimiter>(joint_limiter_loader.createUnmanagedInstance(joint_limiter_type));
   ASSERT_NO_THROW(
     joint_limiter = std::unique_ptr<JointLimiter>(
       joint_limiter_loader.createUnmanagedInstance(joint_limiter_type)));
