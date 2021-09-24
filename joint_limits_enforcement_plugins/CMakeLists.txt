@@ -24,6 +24,7 @@ target_include_directories(
 )
 target_link_libraries(
   ruckig_joint_limiter
+  ruckig::ruckig
 )
 ament_target_dependencies(
   ruckig_joint_limiter

@@ -22,6 +22,7 @@
 
 #include "joint_limits/joint_limits_rosparam.hpp"
 #include "rcutils/logging_macros.h"
+#include "ruckig/brake.hpp"
 #include "ruckig/input_parameter.hpp"
 #include "ruckig/output_parameter.hpp"
 #include "ruckig/ruckig.hpp"
@@ -47,6 +48,7 @@ bool RuckigJointLimiter<joint_limits::JointLimits>::on_init(/*const rclcpp::Dura
 
   // Velocity mode works best for smoothing one waypoint at a time
   ruckig_input_->control_interface = ruckig::ControlInterface::Velocity;
+  ruckig_input_->synchronization = ruckig::Synchronization::Time;
 
   for (auto joint = 0ul; joint < number_of_joints_; ++joint)
   {
@@ -54,13 +56,25 @@ bool RuckigJointLimiter<joint_limits::JointLimits>::on_init(/*const rclcpp::Dura
     {
       ruckig_input_->max_jerk.at(joint) = joint_limits_[joint].max_acceleration;
     }
+    else
+    {
+      ruckig_input_->max_jerk.at(joint) = DEFAULT_MAX_JERK;
+    }
     if (joint_limits_[joint].has_acceleration_limits)
     {
       ruckig_input_->max_acceleration.at(joint) = joint_limits_[joint].max_acceleration;
     }
+    else
+    {
+      ruckig_input_->max_acceleration.at(joint) = DEFAULT_MAX_ACCELERATION;
+    }
     if (joint_limits_[joint].has_velocity_limits)
     {
       ruckig_input_->max_velocity.at(joint) = joint_limits_[joint].max_velocity;
+    }
+    else
+    {
+      ruckig_input_->max_velocity.at(joint) = DEFAULT_MAX_VELOCITY;
     }
   }
 
@@ -71,34 +85,24 @@ template <>
 bool RuckigJointLimiter<joint_limits::JointLimits>::on_configure(
   const trajectory_msgs::msg::JointTrajectoryPoint & current_joint_states)
 {
-  // TODO(destogl): Direct association should be possible, we use Rucking with vectors
   // Initialize Ruckig with current_joint_states
-  std::copy_n(
-    current_joint_states.positions.begin(), number_of_joints_,
-    ruckig_input_->current_position.begin());
+  ruckig_input_->current_position = current_joint_states.positions;
+
   if (current_joint_states.velocities.size() == number_of_joints_)
   {
-    std::copy_n(
-      current_joint_states.velocities.begin(), number_of_joints_,
-      ruckig_input_->current_velocity.begin());
+    ruckig_input_->current_velocity = current_joint_states.velocities;
   }
   else
   {
-    auto vector_with_zeros = std::vector<double>(number_of_joints_, 0.0);
-    std::copy_n(
-      vector_with_zeros.begin(), number_of_joints_, ruckig_input_->current_velocity.begin());
+    ruckig_input_->current_velocity = std::vector<double>(number_of_joints_, 0.0);
   }
   if (current_joint_states.accelerations.size() == number_of_joints_)
   {
-    std::copy_n(
-      current_joint_states.accelerations.begin(), number_of_joints_,
-      ruckig_input_->current_acceleration.begin());
+    ruckig_input_->current_acceleration = current_joint_states.accelerations;
   }
   else
   {
-    auto vector_with_zeros = std::vector<double>(number_of_joints_, 0.0);
-    std::copy_n(
-      vector_with_zeros.begin(), number_of_joints_, ruckig_input_->current_acceleration.begin());
+    ruckig_input_->current_acceleration = std::vector<double>(number_of_joints_, 0.0);
   }
 
   // Initialize output data
@@ -117,60 +121,54 @@ bool RuckigJointLimiter<joint_limits::JointLimits>::on_enforce(
 {
   // We don't use current_joint_states. For stability, it is recommended to feed previous Ruckig
   // output back in as input for the next iteration. This assumes the robot tracks the command well.
+  ruckig_input_->current_position = ruckig_output_->new_position;
+  ruckig_input_->current_velocity = ruckig_output_->new_velocity;
+  ruckig_input_->current_acceleration = ruckig_output_->new_acceleration;
+
+  // Target state is the next waypoint
+  ruckig_input_->target_position = desired_joint_states.positions;
+  // TODO(destogl): in current use-case we use only velocity
+  if (desired_joint_states.velocities.size() == number_of_joints_)
+  {
+    ruckig_input_->target_velocity = desired_joint_states.velocities;
+  }
+  else
+  {
+    ruckig_input_->target_velocity = std::vector<double>(number_of_joints_, 0.0);
+  }
+  if (desired_joint_states.accelerations.size() == number_of_joints_)
+  {
+    ruckig_input_->target_acceleration = desired_joint_states.accelerations;
+  }
+  else
+  {
+    ruckig_input_->target_acceleration = std::vector<double>(number_of_joints_, 0.0);
+  }
+
+  ruckig::Result result = ruckig_->update(*ruckig_input_, *ruckig_output_);
+  RCUTILS_LOG_DEBUG_NAMED("ruckig_joint_limiter", "Rucking result %d", result);
+
+  desired_joint_states.positions = ruckig_output_->new_position;
+  desired_joint_states.velocities = ruckig_output_->new_velocity;
+  desired_joint_states.accelerations = ruckig_output_->new_acceleration;
 
   // Feed output from the previous timestep back as input
   for (auto joint = 0ul; joint < number_of_joints_; ++joint)
   {
-    // We do not have to this. This is done internally, by the library
-    ruckig_input_->current_position.at(joint) = ruckig_output_->new_position.at(joint);
-    ruckig_input_->current_velocity.at(joint) = ruckig_output_->new_velocity.at(joint);
-    ruckig_input_->current_acceleration.at(joint) = ruckig_output_->new_acceleration.at(joint);
-
-    // Target state is the next waypoint
-    ruckig_input_->target_position.at(joint) = desired_joint_states.positions.at(joint);
-    // TODO(destogl): in current use-case we use only velocity
-    if (desired_joint_states.velocities.size() == number_of_joints_)
-    {
-      ruckig_input_->target_velocity.at(joint) = desired_joint_states.velocities.at(joint);
-    }
-    else
-    {
-      ruckig_input_->target_velocity.at(joint) = 0.0;
-    }
-    if (desired_joint_states.accelerations.size() == number_of_joints_)
-    {
-      ruckig_input_->target_acceleration.at(joint) = desired_joint_states.accelerations.at(joint);
-    }
-    else
-    {
-      ruckig_input_->target_acceleration.at(joint) = 0.0;
-    }
-
-    RCUTILS_LOG_INFO_NAMED(
+    RCUTILS_LOG_DEBUG_NAMED(
       "ruckig_joint_limiter",
       "Desired position: %e \nDesired velocity: %e\n Desired acceleration: %e.",
       ruckig_input_->target_position.at(joint), ruckig_input_->target_velocity.at(joint),
       ruckig_input_->target_acceleration.at(joint));
   }
 
-  ruckig::Result result = ruckig_->update(*ruckig_input_, *ruckig_output_);
-
   for (auto joint = 0ul; joint < number_of_joints_; ++joint)
   {
-    RCUTILS_LOG_INFO_NAMED(
+    RCUTILS_LOG_DEBUG_NAMED(
       "ruckig_joint_limiter", "New position: %e \nNew velocity: %e\nNew acceleration: %e.",
       ruckig_output_->new_position.at(joint), ruckig_output_->new_velocity.at(joint),
       ruckig_output_->new_acceleration.at(joint));
   }
-
-  //   std::copy_n(ruckig_output_->new_position, number_of_joints_, desired_joint_states.positions);
-  desired_joint_states.positions = ruckig_output_->new_position;
-  //   std::copy_n(ruckig_output_->new_velocity, number_of_joints_,
-  // desired_joint_states.velocities);
-  desired_joint_states.velocities = ruckig_output_->new_velocity;
-  //   std::copy_n(ruckig_output_->new_acceleration, number_of_joints_,
-  // desired_joint_states.accelerations);
-  desired_joint_states.accelerations = ruckig_output_->new_acceleration;
 
   return result == ruckig::Result::Finished;
 }
