@@ -9,6 +9,11 @@ install(
   DESTINATION include
 )
 
+install(
+  DIRECTORY meshes description
+  DESTINATION share/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   list(APPEND AMENT_LINT_AUTO_EXCLUDE
