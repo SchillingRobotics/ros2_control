@@ -148,8 +148,6 @@ bool ControllerParameters::update(bool check_validity)
   return ret;
 }
 
-
-
 rcl_interfaces::msg::SetParametersResult ControllerParameters::set_parameter_callback(
   const std::vector<rclcpp::Parameter> & parameters)
 {
@@ -183,8 +181,13 @@ rcl_interfaces::msg::SetParametersResult ControllerParameters::set_parameter_cal
 
       RCUTILS_LOG_INFO_EXPRESSION_NAMED(
         found, logger_name_.c_str(),
-        "Dynamic parameters got changed! To update the parameters internally please "
-        "restart the controller.");
+        "Dynamic parameters got changed! Maybe you have to restart controller to update the "
+        "parameters internally.");
+
+      if (found)
+      {
+        up_to_date_ = false;
+      }
     }
     catch (const rclcpp::exceptions::InvalidParameterTypeException & e)
     {
@@ -200,11 +203,6 @@ rcl_interfaces::msg::SetParametersResult ControllerParameters::set_parameter_cal
       RCUTILS_LOG_ERROR_NAMED(logger_name_.c_str(), "%s", result.reason.c_str());
       break;
     }
-  }
-
-  if (result.successful)
-  {
-    up_to_date_ = false;
   }
 
   return result;
