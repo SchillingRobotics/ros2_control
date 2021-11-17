@@ -17,6 +17,7 @@
   <depend>rclcpp</depend>
   <depend>pluginlib</depend>
   <depend>rcutils</depend>
+  <depend>backward_ros</depend>
 
   <test_depend>ament_cmake_gmock</test_depend>
 

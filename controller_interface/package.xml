@@ -10,10 +10,12 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <build_depend>backward_ros</build_depend>
   <build_depend>hardware_interface</build_depend>
   <build_depend>rclcpp_lifecycle</build_depend>
   <build_depend>sensor_msgs</build_depend>
 
+  <exec_depend>backward_ros</exec_depend>
   <exec_depend>hardware_interface</exec_depend>
   <exec_depend>rclcpp_lifecycle</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
