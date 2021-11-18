@@ -45,6 +45,14 @@ bool SimpleJointLimiter<JointLimits>::on_enforce(
     current_joint_states.velocities.resize(num_joints, 0.0);
   }
 
+  // check for required inputs
+  if ((desired_joint_states.positions.size() < num_joints) ||
+      (desired_joint_states.velocities.size() < num_joints) ||
+      (current_joint_states.positions.size() < num_joints))
+  {
+    return false;
+  }
+
   std::vector<double> desired_accel(num_joints);
   std::vector<double> desired_vel(num_joints);
   std::vector<double> desired_pos(num_joints);
