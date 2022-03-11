@@ -30,6 +30,7 @@ target_link_libraries(
 ament_target_dependencies(
   ruckig_joint_limiter
   joint_limits
+  pluginlib
   rclcpp
   rcutils
   ruckig

@@ -40,6 +40,7 @@ target_link_libraries(
 )
 ament_target_dependencies(
   simple_joint_limiter
+  pluginlib
   rclcpp
   rcutils
 )
