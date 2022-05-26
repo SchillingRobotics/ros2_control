@@ -218,7 +218,7 @@ protected:
       else
       {
         it->second = input_parameter.get_value<PT>();
-        RCUTILS_LOG_ERROR_NAMED(
+        RCUTILS_LOG_INFO_NAMED(
           logger_name_.c_str(), "'%s' parameter is updated to value: %s", it->first.name.c_str(),
           input_parameter.value_to_string().c_str());
         return true;
