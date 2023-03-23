@@ -22,6 +22,8 @@ import warnings
 import io
 from contextlib import redirect_stdout, redirect_stderr
 
+from rclpy import logging
+
 from controller_manager import (
     configure_controller,
     list_controllers,
@@ -133,6 +135,9 @@ def is_controller_loaded(node, controller_manager, controller_name):
 
 
 def main(args=None):
+    detailed_logger = logging.get_logger("DetailedSpawnerLogger")
+
+    detailed_logger.info(f"Before initializing rclpy with args: {args}")
     rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
     parser = argparse.ArgumentParser()
     parser.add_argument("controller_name", help="Name of the controller")
@@ -193,6 +198,7 @@ def main(args=None):
     )
 
     command_line_args = rclpy.utilities.remove_ros_args(args=sys.argv)[1:]
+    detailed_logger.info(f"Before parsing spawners args: {command_line_args}")
     args = parser.parse_args(command_line_args)
     controller_name = args.controller_name
     controller_manager_name = args.controller_manager
@@ -210,6 +216,7 @@ def main(args=None):
         "fatal": rclpy.logging.LoggingSeverity.FATAL,
     }
 
+    detailed_logger.info(f"Before checking param file: {param_file}")
     if param_file and not os.path.isfile(param_file):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), param_file)
 
@@ -217,8 +224,14 @@ def main(args=None):
     if controller_namespace:
         prefixed_controller_name = controller_namespace + "/" + controller_name
 
+    detailed_logger.info(
+        f"Before creating node controller has prefixed name: {prefixed_controller_name}"
+    )
+
     node = Node("spawner_" + controller_name)
     rclpy.logging.set_logger_level("spawner_" + controller_name, loglevel_to_severity[log_level])
+
+    detailed_logger.info(f"After creating node and setting logger to: {log_level}")
 
     if not controller_manager_name.startswith("/"):
         spawner_namespace = node.get_namespace()
@@ -227,7 +240,12 @@ def main(args=None):
         else:
             controller_manager_name = f"/{controller_manager_name}"
 
+    detailed_logger.info(f"Using controller manager name: {controller_manager_name}")
+
     try:
+        detailed_logger.info(
+            f"Waiting for controller manager with name: {controller_manager_name}"
+        )
         if not wait_for_controller_manager(
             node, controller_manager_name, controller_manager_timeout
         ):
@@ -236,6 +254,9 @@ def main(args=None):
             )
             return 1
 
+        detailed_logger.info(
+            f"Checking if controller '{prefixed_controller_name}' is loaded in '{controller_manager_name}'"
+        )
         if is_controller_loaded(node, controller_manager_name, prefixed_controller_name):
             node.get_logger().warn(
                 bcolors.WARNING
@@ -243,6 +264,9 @@ def main(args=None):
                 + bcolors.ENDC
             )
         else:
+            detailed_logger.info(
+                f"Controller is not loaded and it will be loaded now: {controller_name}"
+            )
             if controller_type:
                 parameter = Parameter()
                 parameter.name = prefixed_controller_name + ".type"
@@ -289,6 +313,7 @@ def main(args=None):
                 bcolors.OKBLUE + "Loaded " + bcolors.BOLD + prefixed_controller_name + bcolors.ENDC
             )
 
+        detailed_logger.info(f"Before loading controllers param file: {param_file}")
         if param_file:
             # load_parameter_file writes to stdout/stderr. Here we capture that and use node logging instead
             with redirect_stdout(io.StringIO()) as f_stdout, redirect_stderr(
@@ -321,6 +346,7 @@ def main(args=None):
             node.get_logger().info("Loaded " + param_file + " into " + prefixed_controller_name)
 
         if not args.load_only:
+            detailed_logger.info(f"Before configuring controller: {controller_name}")
             ret = configure_controller(node, controller_manager_name, controller_name)
             if not ret.ok:
                 node.get_logger().error(
