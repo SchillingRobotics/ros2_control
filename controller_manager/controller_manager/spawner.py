@@ -36,6 +36,7 @@ import rclpy
 from rcl_interfaces.msg import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.parameter import get_parameter_value
 from rclpy.signals import SignalHandlerOptions
 from ros2param.api import call_set_parameters
@@ -129,8 +130,8 @@ def wait_for_controller_manager(node, controller_manager, timeout_duration):
     return False
 
 
-def is_controller_loaded(node, controller_manager, controller_name):
-    controllers = list_controllers(node, controller_manager).controller
+def is_controller_loaded(node, controller_manager, controller_name, requester):
+    controllers = list_controllers(node, controller_manager, requester).controller
     return any(c.name == controller_name for c in controllers)
 
 
@@ -229,6 +230,8 @@ def main(args=None):
     )
 
     node = Node("spawner_" + controller_name)
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     rclpy.logging.set_logger_level("spawner_" + controller_name, loglevel_to_severity[log_level])
 
     detailed_logger.info(f"After creating node and setting logger to: {log_level}")
@@ -257,7 +260,7 @@ def main(args=None):
         detailed_logger.info(
             f"Checking if controller '{prefixed_controller_name}' is loaded in '{controller_manager_name}'"
         )
-        if is_controller_loaded(node, controller_manager_name, prefixed_controller_name):
+        if is_controller_loaded(node, controller_manager_name, prefixed_controller_name, prefixed_controller_name):
             node.get_logger().warn(
                 bcolors.WARNING
                 + "Controller already loaded, skipping load_controller"

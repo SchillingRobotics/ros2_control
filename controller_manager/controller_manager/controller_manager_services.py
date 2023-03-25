@@ -29,21 +29,33 @@ import rclpy
 
 
 def service_caller(node, service_name, service_type, request, service_timeout=10.0):
+    detailed_logger = rclpy.logging.get_logger("DetailedSpawnerLogger")
+
+    detailed_logger.info(f"Creating service client: {service_name}")
     cli = node.create_client(service_type, service_name)
 
+    detailed_logger.info(f"Checking if service client {service_name} is ready")
+
     if not cli.service_is_ready():
+        detailed_logger.info(f"waiting {service_timeout} seconds for service {service_name} to become available...")
         node.get_logger().debug(
             f"waiting {service_timeout} seconds for service {service_name} to become available..."
         )
         if not cli.wait_for_service(service_timeout):
+            detailed_logger.info(f"Could not contact service {service_name}")
             raise RuntimeError(f"Could not contact service {service_name}")
 
+    detailed_logger.info(f"requester: making request: {request}")
     node.get_logger().debug(f"requester: making request: {request}\n")
     future = cli.call_async(request)
-    rclpy.spin_until_future_complete(node, future)
+    detailed_logger.info(f"Waiting for service {service_name} reply")
+    #rclpy.spin_until_future_complete(node, future)
+    rclpy.spin_until_future_complete(node, future) if node.executor is None else node.executor.spin_until_future_complete(future) 
     if future.result() is not None:
+        detailed_logger.info(f"Received reply from service {service_name}")
         return future.result()
     else:
+        detailed_logger.info(f"Exception while calling service: {future.exception()}")
         raise RuntimeError(f"Exception while calling service: {future.exception()}")
 
 
@@ -55,8 +67,9 @@ def configure_controller(node, controller_manager_name, controller_name):
     )
 
 
-def list_controllers(node, controller_manager_name):
+def list_controllers(node, controller_manager_name, requester=""):
     request = ListControllers.Request()
+    request.requester = requester
     return service_caller(
         node, f"{controller_manager_name}/list_controllers", ListControllers, request
     )

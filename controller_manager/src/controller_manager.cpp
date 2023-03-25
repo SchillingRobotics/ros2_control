@@ -1301,13 +1301,15 @@ void ControllerManager::activate_controllers_asap(
 }
 
 void ControllerManager::list_controllers_srv_cb(
-  const std::shared_ptr<controller_manager_msgs::srv::ListControllers::Request>,
+  const std::shared_ptr<controller_manager_msgs::srv::ListControllers::Request> request,
   std::shared_ptr<controller_manager_msgs::srv::ListControllers::Response> response)
 {
   // lock services
-  RCLCPP_DEBUG(get_logger(), "list controller service called");
+  RCLCPP_WARN(
+    get_logger(),
+    (std::string("list controller service called for ") + request->requester).c_str());
   std::lock_guard<std::mutex> services_guard(services_lock_);
-  RCLCPP_DEBUG(get_logger(), "list controller service locked");
+  RCLCPP_WARN(get_logger(), "list controller service locked");
 
   // lock controllers
   std::lock_guard<std::recursive_mutex> guard(rt_controllers_wrapper_.controllers_lock_);
@@ -1403,7 +1405,7 @@ void ControllerManager::list_controllers_srv_cb(
     }
   }
 
-  RCLCPP_DEBUG(get_logger(), "list controller service finished");
+  RCLCPP_WARN(get_logger(), "list controller service finished");
 }
 
 void ControllerManager::list_controller_types_srv_cb(
