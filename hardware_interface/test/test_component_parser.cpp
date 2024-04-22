@@ -100,16 +100,6 @@ TEST_F(TestComponentParser, component_interface_type_empty_throws_error)
   ASSERT_THROW(parse_control_resources_from_urdf(broken_urdf_string), std::runtime_error);
 }
 
-TEST_F(TestComponentParser, parameter_empty_throws_error)
-{
-  const std::string broken_urdf_string =
-    std::string(ros2_control_test_assets::urdf_head) +
-    ros2_control_test_assets::invalid_urdf_ros2_control_parameter_empty +
-    ros2_control_test_assets::urdf_tail;
-
-  ASSERT_THROW(parse_control_resources_from_urdf(broken_urdf_string), std::runtime_error);
-}
-
 TEST_F(TestComponentParser, successfully_parse_valid_urdf_system_one_interface)
 {
   std::string urdf_to_test =
@@ -497,14 +487,16 @@ TEST_F(TestComponentParser, successfully_parse_valid_urdf_actuator_only)
   const auto joint = transmission.joints[0];
   EXPECT_EQ(joint.name, "joint1");
   EXPECT_EQ(joint.role, "joint1");
-  EXPECT_THAT(joint.interfaces, ElementsAre("velocity"));
+  EXPECT_THAT(joint.state_interfaces, ElementsAre("velocity"));
+  EXPECT_THAT(joint.command_interfaces, ElementsAre("velocity"));
   EXPECT_THAT(joint.mechanical_reduction, DoubleEq(325.949));
   EXPECT_THAT(joint.offset, DoubleEq(0.0));
   EXPECT_THAT(transmission.actuators, SizeIs(1));
   const auto actuator = transmission.actuators[0];
   EXPECT_EQ(actuator.name, "actuator1");
   EXPECT_EQ(actuator.role, "actuator1");
-  EXPECT_THAT(actuator.interfaces, ContainerEq(joint.interfaces));
+  EXPECT_THAT(actuator.state_interfaces, ContainerEq(joint.state_interfaces));
+  EXPECT_THAT(actuator.command_interfaces, ContainerEq(joint.command_interfaces));
   EXPECT_THAT(actuator.offset, DoubleEq(0.0));
   ASSERT_THAT(transmission.parameters, SizeIs(1));
   EXPECT_EQ(transmission.parameters.at("additional_special_parameter"), "1337");
@@ -572,6 +564,7 @@ TEST_F(TestComponentParser, successfully_parse_valid_urdf_system_robot_with_gpio
   EXPECT_THAT(hardware_info.gpios[1].state_interfaces, SizeIs(1));
   EXPECT_THAT(hardware_info.gpios[1].command_interfaces, SizeIs(1));
   EXPECT_EQ(hardware_info.gpios[1].state_interfaces[0].name, "vacuum");
+  EXPECT_EQ(hardware_info.gpios[1].state_interfaces[0].initial_value, "1.0");
   EXPECT_EQ(hardware_info.gpios[1].command_interfaces[0].name, "vacuum");
 
   EXPECT_THAT(hardware_info.transmissions, IsEmpty());
@@ -623,6 +616,32 @@ TEST_F(TestComponentParser, successfully_parse_valid_urdf_system_with_size_and_d
   EXPECT_EQ(hardware_info.gpios[0].state_interfaces[1].size, 1);
 }
 
+TEST_F(TestComponentParser, successfully_parse_parameter_empty)
+{
+  const std::string urdf_to_test =
+    std::string(ros2_control_test_assets::urdf_head) +
+    ros2_control_test_assets::valid_urdf_ros2_control_parameter_empty +
+    ros2_control_test_assets::urdf_tail;
+  const auto control_hardware = parse_control_resources_from_urdf(urdf_to_test);
+  ASSERT_THAT(control_hardware, SizeIs(1));
+  auto hardware_info = control_hardware.front();
+
+  EXPECT_EQ(hardware_info.name, "2DOF_System_Robot_Position_Only");
+  EXPECT_EQ(hardware_info.type, "system");
+  EXPECT_EQ(
+    hardware_info.hardware_plugin_name,
+    "ros2_control_demo_hardware/2DOF_System_Hardware_Position_Only");
+
+  ASSERT_THAT(hardware_info.joints, SizeIs(1));
+
+  EXPECT_EQ(hardware_info.joints[0].name, "joint1");
+  EXPECT_EQ(hardware_info.joints[0].type, "joint");
+  EXPECT_EQ(hardware_info.joints[0].command_interfaces[0].name, "position");
+
+  EXPECT_EQ(hardware_info.hardware_parameters.at("example_param_write_for_sec"), "");
+  EXPECT_EQ(hardware_info.hardware_parameters.at("example_param_read_for_sec"), "2");
+}
+
 TEST_F(TestComponentParser, negative_size_throws_error)
 {
   std::string urdf_to_test = std::string(ros2_control_test_assets::urdf_head) +
@@ -654,5 +673,130 @@ TEST_F(TestComponentParser, transmission_given_too_many_joints_throws_error)
     std::string(ros2_control_test_assets::urdf_head) +
     ros2_control_test_assets::invalid_urdf2_transmission_given_too_many_joints +
     ros2_control_test_assets::urdf_tail;
+  ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
+}
+
+TEST_F(TestComponentParser, gripper_mimic_true_valid_config)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_true_no_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  std::vector<hardware_interface::HardwareInfo> hw_info;
+  ASSERT_NO_THROW(hw_info = parse_control_resources_from_urdf(urdf_to_test));
+  ASSERT_THAT(hw_info, SizeIs(1));
+  ASSERT_THAT(hw_info[0].mimic_joints, SizeIs(1));
+  EXPECT_DOUBLE_EQ(hw_info[0].mimic_joints[0].multiplier, 2.0);
+  EXPECT_DOUBLE_EQ(hw_info[0].mimic_joints[0].offset, 1.0);
+  EXPECT_EQ(hw_info[0].mimic_joints[0].mimicked_joint_index, 0);
+  EXPECT_EQ(hw_info[0].mimic_joints[0].joint_index, 1);
+}
+
+TEST_F(TestComponentParser, gripper_no_mimic_valid_config)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_no_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  std::vector<hardware_interface::HardwareInfo> hw_info;
+  ASSERT_NO_THROW(hw_info = parse_control_resources_from_urdf(urdf_to_test));
+  ASSERT_THAT(hw_info, SizeIs(1));
+  ASSERT_THAT(hw_info[0].mimic_joints, SizeIs(1));
+  EXPECT_DOUBLE_EQ(hw_info[0].mimic_joints[0].multiplier, 2.0);
+  EXPECT_DOUBLE_EQ(hw_info[0].mimic_joints[0].offset, 1.0);
+  EXPECT_EQ(hw_info[0].mimic_joints[0].mimicked_joint_index, 0);
+  EXPECT_EQ(hw_info[0].mimic_joints[0].joint_index, 1);
+}
+
+// TODO(christophfroehlich) delete deprecated config test
+TEST_F(TestComponentParser, gripper_mimic_deprecated_valid_config)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_deprecated) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  std::vector<hardware_interface::HardwareInfo> hw_info;
+  ASSERT_NO_THROW(hw_info = parse_control_resources_from_urdf(urdf_to_test));
+  ASSERT_THAT(hw_info, SizeIs(1));
+  ASSERT_THAT(hw_info[0].mimic_joints, SizeIs(1));
+  EXPECT_DOUBLE_EQ(hw_info[0].mimic_joints[0].multiplier, 2.0);
+  EXPECT_DOUBLE_EQ(hw_info[0].mimic_joints[0].offset, 1.0);
+  EXPECT_EQ(hw_info[0].mimic_joints[0].mimicked_joint_index, 0);
+  EXPECT_EQ(hw_info[0].mimic_joints[0].joint_index, 1);
+}
+
+TEST_F(TestComponentParser, gripper_mimic_deprecated_unknown_joint_throws_error)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head) +
+    std::string(
+      ros2_control_test_assets::gripper_hardware_resources_mimic_deprecated_unknown_joint) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  std::vector<hardware_interface::HardwareInfo> hw_info;
+  ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
+}
+// end delete deprecated config test
+
+TEST_F(TestComponentParser, gripper_mimic_with_unknown_joint_throws_error)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head_unknown_joint) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_true_no_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
+}
+
+TEST_F(TestComponentParser, gripper_mimic_true_without_mimic_info_throws_error)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head_no_mimic) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_true_no_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
+}
+
+TEST_F(TestComponentParser, gripper_mimic_true_invalid_config_throws_error)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_true_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
+}
+
+TEST_F(TestComponentParser, gripper_mimic_false_valid_config)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_false_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  std::vector<hardware_interface::HardwareInfo> hw_info;
+  ASSERT_NO_THROW(hw_info = parse_control_resources_from_urdf(urdf_to_test));
+  ASSERT_THAT(hw_info, SizeIs(1));
+  ASSERT_THAT(hw_info[0].mimic_joints, SizeIs(0));
+}
+
+/**
+ * @brief Test that the parser throws an error if the URDF contains a link with no parent.
+ */
+TEST_F(TestComponentParser, urdf_two_root_links_throws_error)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head_invalid_two_root_links) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_true_no_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
+  ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
+}
+
+/**
+ * @brief Test that the parser throws an error if a joint defined in the ros2_control tag is missing
+ * in the URDF
+ */
+TEST_F(TestComponentParser, urdf_incomplete_throws_error)
+{
+  const auto urdf_to_test =
+    std::string(ros2_control_test_assets::gripper_urdf_head_incomplete) +
+    std::string(ros2_control_test_assets::gripper_hardware_resources_mimic_true_no_command_if) +
+    std::string(ros2_control_test_assets::urdf_tail);
   ASSERT_THROW(parse_control_resources_from_urdf(urdf_to_test), std::runtime_error);
 }

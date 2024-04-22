@@ -372,7 +372,9 @@ const auto valid_urdf_ros2_control_system_robot_with_gpio =
     </gpio>
     <gpio name="flange_vacuum">
       <command_interface name="vacuum"/>
-      <state_interface name="vacuum"/> <!-- Needed to know current state of the input -->
+      <state_interface name="vacuum"> <!-- Needed to know current state of the input -->
+        <param name="initial_value">1.0</param>
+      </state_interface>
     </gpio>
   </ros2_control>
 )";
@@ -395,6 +397,21 @@ const auto valid_urdf_ros2_control_system_robot_with_size_and_data_type =
       <state_interface name="analog_input" size="3"/>
       <state_interface name="image" data_type="cv::Mat"/>
     </gpio>
+  </ros2_control>
+)";
+
+const auto valid_urdf_ros2_control_parameter_empty =
+  R"(
+  <ros2_control name="2DOF_System_Robot_Position_Only" type="system">
+    <hardware>
+      <plugin>ros2_control_demo_hardware/2DOF_System_Hardware_Position_Only</plugin>
+      <param name="example_param_write_for_sec"></param>
+      <param name="example_param_read_for_sec">2</param>
+    </hardware>
+    <joint name="joint1">
+      <command_interface name="position">
+      </command_interface>
+    </joint>
   </ros2_control>
 )";
 
@@ -481,23 +498,6 @@ const auto invalid_urdf_ros2_control_component_interface_type_empty =
       <state_interface></state_interface>
       <param name="min_position_value">-1</param>
       <param name="max_position_value">1</param>
-    </joint>
-  </ros2_control>
-)";
-
-const auto invalid_urdf_ros2_control_parameter_empty =
-  R"(
-  <ros2_control name="2DOF_System_Robot_Position_Only" type="system">
-    <hardware>
-      <plugin>ros2_control_demo_hardware/2DOF_System_Hardware_Position_Only</plugin>
-      <param name="example_param_write_for_sec"></param>
-      <param name="example_param_read_for_sec">2</param>
-    </hardware>
-    <joint name="joint1">
-      <command_interface name="position">
-        <param name="min_position_value">-1</param>
-        <param name="max_position_value">1</param>
-      </command_interface>
     </joint>
   </ros2_control>
 )";

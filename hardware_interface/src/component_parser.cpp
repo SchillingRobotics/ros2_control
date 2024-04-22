@@ -14,14 +14,18 @@
 
 #include <tinyxml2.h>
 #include <charconv>
+#include <iostream>
 #include <regex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "urdf/model.h"
+
 #include "hardware_interface/component_parser.hpp"
 #include "hardware_interface/hardware_info.hpp"
+#include "hardware_interface/lexical_casts.hpp"
 
 namespace
 {
@@ -40,6 +44,7 @@ constexpr const auto kStateInterfaceTag = "state_interface";
 constexpr const auto kMinTag = "min";
 constexpr const auto kMaxTag = "max";
 constexpr const auto kInitialValueTag = "initial_value";
+constexpr const auto kMimicAttribute = "mimic";
 constexpr const auto kDataTypeAttribute = "data_type";
 constexpr const auto kSizeAttribute = "size";
 constexpr const auto kNameAttribute = "name";
@@ -68,7 +73,8 @@ std::string get_text_for_element(
   const auto get_text_output = element_it->GetText();
   if (!get_text_output)
   {
-    throw std::runtime_error("text not specified in the " + tag_name + " tag");
+    std::cerr << "text not specified in the " << tag_name << " tag" << std::endl;
+    return "";
   }
   return get_text_output;
 }
@@ -126,25 +132,22 @@ double get_parameter_value_or(
 {
   while (params_it)
   {
-    // Fill the map with parameters
-    const auto tag_name = params_it->Name();
-    if (strcmp(tag_name, parameter_name) == 0)
+    try
     {
-      const auto tag_text = params_it->GetText();
-      if (tag_text)
+      // Fill the map with parameters
+      const auto tag_name = params_it->Name();
+      if (strcmp(tag_name, parameter_name) == 0)
       {
-        // Parse and return double value if there is no parsing error
-        double result_value;
-        const auto parse_result =
-          std::from_chars(tag_text, tag_text + std::strlen(tag_text), result_value);
-        if (parse_result.ec == std::errc())
+        const auto tag_text = params_it->GetText();
+        if (tag_text)
         {
-          return result_value;
+          return hardware_interface::stod(tag_text);
         }
-
-        // Parsing failed - exit loop and return default value
-        break;
       }
+    }
+    catch (const std::exception & e)
+    {
+      return default_value;
     }
 
     params_it = params_it->NextSiblingElement();
@@ -224,7 +227,7 @@ std::string parse_data_type_attribute(const tinyxml2::XMLElement * elem)
 bool parse_is_async_attribute(const tinyxml2::XMLElement * elem)
 {
   const tinyxml2::XMLAttribute * attr = elem->FindAttribute(kIsAsyncAttribute);
-  return attr ? strcasecmp(attr->Value(), "true") == 0 : false;
+  return attr ? parse_bool(attr->Value()) : false;
 }
 
 /// Search XML snippet from URDF for parameters.
@@ -302,11 +305,11 @@ hardware_interface::InterfaceInfo parse_interfaces_from_xml(
 
 /// Search XML snippet from URDF for information about a control component.
 /**
-  * \param[in] component_it pointer to the iterator where component
-  * info should be found
-  * \return ComponentInfo filled with information about component
-  * \throws std::runtime_error if a component attribute or tag is not found
-  */
+ * \param[in] component_it pointer to the iterator where component
+ * info should be found
+ * \return ComponentInfo filled with information about component
+ * \throws std::runtime_error if a component attribute or tag is not found
+ */
 ComponentInfo parse_component_from_xml(const tinyxml2::XMLElement * component_it)
 {
   ComponentInfo component;
@@ -314,6 +317,21 @@ ComponentInfo parse_component_from_xml(const tinyxml2::XMLElement * component_it
   // Find name, type and class of a component
   component.type = component_it->Name();
   component.name = get_attribute_value(component_it, kNameAttribute, component.type);
+
+  if (std::string(kJointTag) == component.type)
+  {
+    try
+    {
+      component.is_mimic = parse_bool(get_attribute_value(component_it, kMimicAttribute, kJointTag))
+                             ? MimicAttribute::TRUE
+                             : MimicAttribute::FALSE;
+    }
+    catch (const std::runtime_error & e)
+    {
+      // mimic attribute not set
+      component.is_mimic = MimicAttribute::NOT_SET;
+    }
+  }
 
   // Parse all command interfaces
   const auto * command_interfaces_it = component_it->FirstChildElement(kCommandInterfaceTag);
@@ -347,7 +365,7 @@ ComponentInfo parse_component_from_xml(const tinyxml2::XMLElement * component_it
  *  and the interface may be an array of a fixed size of the data type.
  *
  * \param[in] component_it pointer to the iterator where component
- * info should befound
+ * info should be found
  * \throws std::runtime_error if a required component attribute or tag is not found.
  */
 ComponentInfo parse_complex_component_from_xml(const tinyxml2::XMLElement * component_it)
@@ -365,7 +383,8 @@ ComponentInfo parse_complex_component_from_xml(const tinyxml2::XMLElement * comp
     component.command_interfaces.push_back(parse_interfaces_from_xml(command_interfaces_it));
     component.command_interfaces.back().data_type =
       parse_data_type_attribute(command_interfaces_it);
-    component.command_interfaces.back().size = parse_size_attribute(command_interfaces_it);
+    component.command_interfaces.back().size =
+      static_cast<int>(parse_size_attribute(command_interfaces_it));
     command_interfaces_it = command_interfaces_it->NextSiblingElement(kCommandInterfaceTag);
   }
 
@@ -375,7 +394,8 @@ ComponentInfo parse_complex_component_from_xml(const tinyxml2::XMLElement * comp
   {
     component.state_interfaces.push_back(parse_interfaces_from_xml(state_interfaces_it));
     component.state_interfaces.back().data_type = parse_data_type_attribute(state_interfaces_it);
-    component.state_interfaces.back().size = parse_size_attribute(state_interfaces_it);
+    component.state_interfaces.back().size =
+      static_cast<int>(parse_size_attribute(state_interfaces_it));
     state_interfaces_it = state_interfaces_it->NextSiblingElement(kStateInterfaceTag);
   }
 
@@ -415,10 +435,10 @@ ActuatorInfo parse_transmission_actuator_from_xml(const tinyxml2::XMLElement * e
 
 /// Search XML snippet from URDF for information about a transmission.
 /**
-  * \param[in] transmission_it pointer to the iterator where transmission info should be found
-  * \return TransmissionInfo filled with information about transmission
-  * \throws std::runtime_error if an attribute or tag is not found
-  */
+ * \param[in] transmission_it pointer to the iterator where transmission info should be found
+ * \return TransmissionInfo filled with information about transmission
+ * \throws std::runtime_error if an attribute or tag is not found
+ */
 TransmissionInfo parse_transmission_from_xml(const tinyxml2::XMLElement * transmission_it)
 {
   TransmissionInfo transmission;
@@ -481,7 +501,12 @@ void auto_fill_transmission_interfaces(HardwareInfo & hardware)
       //  copy interface names from their definitions in the component
       std::transform(
         found_it->command_interfaces.cbegin(), found_it->command_interfaces.cend(),
-        std::back_inserter(joint.interfaces),
+        std::back_inserter(joint.command_interfaces),
+        [](const auto & interface) { return interface.name; });
+
+      std::transform(
+        found_it->state_interfaces.cbegin(), found_it->state_interfaces.cend(),
+        std::back_inserter(joint.state_interfaces),
         [](const auto & interface) { return interface.name; });
     }
 
@@ -496,8 +521,9 @@ void auto_fill_transmission_interfaces(HardwareInfo & hardware)
           std::to_string(transmission.joints.size()));
       }
 
-      transmission.actuators.push_back(
-        ActuatorInfo{"actuator1", transmission.joints[0].interfaces, "actuator1", 1.0, 0.0});
+      transmission.actuators.push_back(ActuatorInfo{
+        "actuator1", transmission.joints[0].state_interfaces,
+        transmission.joints[0].command_interfaces, "actuator1", 1.0, 0.0});
     }
   }
 }
@@ -522,7 +548,7 @@ HardwareInfo parse_resource_from_xml(
   const auto * ros2_control_child_it = ros2_control_it->FirstChildElement();
   while (ros2_control_child_it)
   {
-    if (!std::string(kHardwareTag).compare(ros2_control_child_it->Name()))
+    if (std::string(kHardwareTag) == ros2_control_child_it->Name())
     {
       const auto * type_it = ros2_control_child_it->FirstChildElement(kPluginNameTag);
       hardware.hardware_plugin_name =
@@ -533,19 +559,19 @@ HardwareInfo parse_resource_from_xml(
         hardware.hardware_parameters = parse_parameters_from_xml(params_it);
       }
     }
-    else if (!std::string(kJointTag).compare(ros2_control_child_it->Name()))
+    else if (std::string(kJointTag) == ros2_control_child_it->Name())
     {
       hardware.joints.push_back(parse_component_from_xml(ros2_control_child_it));
     }
-    else if (!std::string(kSensorTag).compare(ros2_control_child_it->Name()))
+    else if (std::string(kSensorTag) == ros2_control_child_it->Name())
     {
       hardware.sensors.push_back(parse_component_from_xml(ros2_control_child_it));
     }
-    else if (!std::string(kGPIOTag).compare(ros2_control_child_it->Name()))
+    else if (std::string(kGPIOTag) == ros2_control_child_it->Name())
     {
       hardware.gpios.push_back(parse_complex_component_from_xml(ros2_control_child_it));
     }
-    else if (!std::string(kTransmissionTag).compare(ros2_control_child_it->Name()))
+    else if (std::string(kTransmissionTag) == ros2_control_child_it->Name())
     {
       hardware.transmissions.push_back(parse_transmission_from_xml(ros2_control_child_it));
     }
@@ -585,7 +611,7 @@ std::vector<HardwareInfo> parse_control_resources_from_urdf(const std::string & 
   // Find robot tag
   const tinyxml2::XMLElement * robot_it = doc.RootElement();
 
-  if (std::string(kRobotTag).compare(robot_it->Name()))
+  if (std::string(kRobotTag) != robot_it->Name())
   {
     throw std::runtime_error("the robot tag is not root element in URDF");
   }
@@ -601,6 +627,96 @@ std::vector<HardwareInfo> parse_control_resources_from_urdf(const std::string & 
   {
     hardware_info.push_back(detail::parse_resource_from_xml(ros2_control_it, urdf));
     ros2_control_it = ros2_control_it->NextSiblingElement(kROS2ControlTag);
+  }
+
+  // parse full URDF for mimic options
+  urdf::Model model;
+  if (!model.initString(urdf))
+  {
+    throw std::runtime_error("Failed to parse URDF file");
+  }
+  for (auto & hw_info : hardware_info)
+  {
+    for (auto i = 0u; i < hw_info.joints.size(); ++i)
+    {
+      const auto & joint = hw_info.joints.at(i);
+
+      // Search for mimic joints defined in ros2_control tag (deprecated)
+      // TODO(christophfroehlich) delete deprecated config with ROS-J
+      if (joint.parameters.find("mimic") != joint.parameters.cend())
+      {
+        std::cerr << "Warning: Mimic joints defined in ros2_control tag are deprecated. "
+                  << "Please define mimic joints in URDF." << std::endl;
+        const auto mimicked_joint_it = std::find_if(
+          hw_info.joints.begin(), hw_info.joints.end(),
+          [&mimicked_joint =
+             joint.parameters.at("mimic")](const hardware_interface::ComponentInfo & joint_info)
+          { return joint_info.name == mimicked_joint; });
+        if (mimicked_joint_it == hw_info.joints.cend())
+        {
+          throw std::runtime_error(
+            "Mimicked joint '" + joint.parameters.at("mimic") + "' not found");
+        }
+        hardware_interface::MimicJoint mimic_joint;
+        mimic_joint.joint_index = i;
+        mimic_joint.multiplier = 1.0;
+        mimic_joint.offset = 0.0;
+        mimic_joint.mimicked_joint_index = std::distance(hw_info.joints.begin(), mimicked_joint_it);
+        auto param_it = joint.parameters.find("multiplier");
+        if (param_it != joint.parameters.end())
+        {
+          mimic_joint.multiplier = hardware_interface::stod(joint.parameters.at("multiplier"));
+        }
+        param_it = joint.parameters.find("offset");
+        if (param_it != joint.parameters.end())
+        {
+          mimic_joint.offset = hardware_interface::stod(joint.parameters.at("offset"));
+        }
+        hw_info.mimic_joints.push_back(mimic_joint);
+      }
+      else
+      {
+        auto urdf_joint = model.getJoint(joint.name);
+        if (!urdf_joint)
+        {
+          throw std::runtime_error("Joint " + joint.name + " not found in URDF");
+        }
+        if (!urdf_joint->mimic && joint.is_mimic == MimicAttribute::TRUE)
+        {
+          throw std::runtime_error(
+            "Joint '" + joint.name + "' has no mimic information in the URDF.");
+        }
+        if (urdf_joint->mimic && joint.is_mimic != MimicAttribute::FALSE)
+        {
+          if (joint.command_interfaces.size() > 0)
+          {
+            throw std::runtime_error(
+              "Joint '" + joint.name +
+              "' has mimic attribute not set to false: Activated mimic joints cannot have command "
+              "interfaces.");
+          }
+          auto find_joint = [&hw_info](const std::string & name)
+          {
+            auto it = std::find_if(
+              hw_info.joints.begin(), hw_info.joints.end(),
+              [&name](const auto & j) { return j.name == name; });
+            if (it == hw_info.joints.end())
+            {
+              throw std::runtime_error(
+                "Mimic joint '" + name + "' not found in <ros2_control> tag");
+            }
+            return std::distance(hw_info.joints.begin(), it);
+          };
+
+          MimicJoint mimic_joint;
+          mimic_joint.joint_index = i;
+          mimic_joint.mimicked_joint_index = find_joint(urdf_joint->mimic->joint_name);
+          mimic_joint.multiplier = urdf_joint->mimic->multiplier;
+          mimic_joint.offset = urdf_joint->mimic->offset;
+          hw_info.mimic_joints.push_back(mimic_joint);
+        }
+      }
+    }
   }
 
   return hardware_info;

@@ -20,6 +20,7 @@
 #define CONTROLLER_MANAGER__CONTROLLER_SPEC_HPP_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include "controller_interface/controller_interface.hpp"
@@ -37,7 +38,13 @@ struct ControllerSpec
 {
   hardware_interface::ControllerInfo info;
   controller_interface::ControllerInterfaceBaseSharedPtr c;
+  std::shared_ptr<rclcpp::Time> next_update_cycle_time;
 };
 
+struct ControllerChainSpec
+{
+  std::vector<std::string> following_controllers;
+  std::vector<std::string> preceding_controllers;
+};
 }  // namespace controller_manager
 #endif  // CONTROLLER_MANAGER__CONTROLLER_SPEC_HPP_

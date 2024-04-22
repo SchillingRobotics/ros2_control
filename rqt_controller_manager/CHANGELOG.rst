@@ -2,6 +2,99 @@
 Changelog for package rqt_controller_manager
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.8.0 (2024-03-27)
+------------------
+* Fix rqt_controller_manager for non-humble (`#1454 <https://github.com/ros-controls/ros2_control/issues/1454>`_)
+* Add cm as dependency to rqt_cm (`#1447 <https://github.com/ros-controls/ros2_control/issues/1447>`_)
+* Contributors: Christoph Fröhlich
+
+4.7.0 (2024-03-22)
+------------------
+* Codeformat from new pre-commit config (`#1433 <https://github.com/ros-controls/ros2_control/issues/1433>`_)
+* rqt_controller_manager compatibility for humble (`#1429 <https://github.com/ros-controls/ros2_control/issues/1429>`_)
+* Contributors: Christoph Fröhlich
+
+4.6.0 (2024-03-02)
+------------------
+* [CI] Code coverage + pre-commit (`#1413 <https://github.com/ros-controls/ros2_control/issues/1413>`_)
+* Contributors: Christoph Fröhlich
+
+4.5.0 (2024-02-12)
+------------------
+
+4.4.0 (2024-01-31)
+------------------
+
+4.3.0 (2024-01-20)
+------------------
+* Fix rqt controller manager crash on ros2_control restart (`#1273 <https://github.com/ros-controls/ros2_control/issues/1273>`_)
+* Contributors: Sai Kishor Kothakota
+
+4.2.0 (2023-12-12)
+------------------
+
+4.1.0 (2023-11-30)
+------------------
+
+4.0.0 (2023-11-21)
+------------------
+
+3.21.0 (2023-11-06)
+-------------------
+
+3.20.0 (2023-10-31)
+-------------------
+
+3.19.1 (2023-10-04)
+-------------------
+
+3.19.0 (2023-10-03)
+-------------------
+
+3.18.0 (2023-08-17)
+-------------------
+
+3.17.0 (2023-08-07)
+-------------------
+
+3.16.0 (2023-07-09)
+-------------------
+
+3.15.0 (2023-06-23)
+-------------------
+
+3.14.0 (2023-06-14)
+-------------------
+
+3.13.0 (2023-05-18)
+-------------------
+
+3.12.2 (2023-04-29)
+-------------------
+
+3.12.1 (2023-04-14)
+-------------------
+
+3.12.0 (2023-04-02)
+-------------------
+
+3.11.0 (2023-03-22)
+-------------------
+
+3.10.0 (2023-03-16)
+-------------------
+
+3.9.1 (2023-03-09)
+------------------
+
+3.9.0 (2023-02-28)
+------------------
+
+3.8.0 (2023-02-10)
+------------------
+* 🖤 Add Black formatter for Python files. (`#936 <https://github.com/ros-controls/ros2_control/issues/936>`_)
+* Contributors: Dr. Denis
+
 3.7.0 (2023-01-24)
 ------------------
 

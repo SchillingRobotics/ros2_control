@@ -51,10 +51,14 @@
 #include "rclcpp/node_interfaces/node_logging_interface.hpp"
 #include "rclcpp/node_interfaces/node_parameters_interface.hpp"
 #include "rclcpp/parameter.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/string.hpp"
 
 namespace controller_manager
 {
 using ControllersListIterator = std::vector<controller_manager::ControllerSpec>::const_iterator;
+
+CONTROLLER_MANAGER_PUBLIC rclcpp::NodeOptions get_cm_node_options();
 
 class ControllerManager : public rclcpp::Node
 {
@@ -67,16 +71,21 @@ public:
     std::unique_ptr<hardware_interface::ResourceManager> resource_manager,
     std::shared_ptr<rclcpp::Executor> executor,
     const std::string & manager_node_name = "controller_manager",
-    const std::string & namespace_ = "");
+    const std::string & node_namespace = "",
+    const rclcpp::NodeOptions & options = get_cm_node_options());
 
   CONTROLLER_MANAGER_PUBLIC
   ControllerManager(
     std::shared_ptr<rclcpp::Executor> executor,
     const std::string & manager_node_name = "controller_manager",
-    const std::string & namespace_ = "");
+    const std::string & node_namespace = "",
+    const rclcpp::NodeOptions & options = get_cm_node_options());
 
   CONTROLLER_MANAGER_PUBLIC
   virtual ~ControllerManager() = default;
+
+  CONTROLLER_MANAGER_PUBLIC
+  void robot_description_callback(const std_msgs::msg::String & msg);
 
   CONTROLLER_MANAGER_PUBLIC
   void init_resource_manager(const std::string & robot_description);
@@ -113,6 +122,7 @@ public:
     controller_spec.c = controller;
     controller_spec.info.name = controller_name;
     controller_spec.info.type = controller_type;
+    controller_spec.next_update_cycle_time = std::make_shared<rclcpp::Time>(0);
     return add_controller_impl(controller_spec);
   }
 
@@ -312,10 +322,11 @@ private:
   std::vector<std::string> get_controller_names();
   std::pair<std::string, std::string> split_command_interface(
     const std::string & command_interface);
+  void subscribe_to_robot_description_topic();
 
   /**
-   * Clear request lists used when switching controllers. The lists are shared between "callback" and
-   * "control loop" threads.
+   * Clear request lists used when switching controllers. The lists are shared between "callback"
+   * and "control loop" threads.
    */
   void clear_requests();
 
@@ -379,7 +390,40 @@ private:
     const std::vector<ControllerSpec> & controllers, int strictness,
     const ControllersListIterator controller_it);
 
+  /**
+   * @brief Inserts a controller into an ordered list based on dependencies to compute the
+   * controller chain.
+   *
+   * This method computes the controller chain by inserting the provided controller name into an
+   * ordered list of controllers based on dependencies. It ensures that controllers are inserted in
+   * the correct order so that dependencies are satisfied.
+   *
+   * @param ctrl_name The name of the controller to be inserted into the chain.
+   * @param controller_iterator An iterator pointing to the position in the ordered list where the
+   * controller should be inserted.
+   * @param append_to_controller Flag indicating whether the controller should be appended or
+   * prepended to the parsed iterator.
+   * @note The specification of controller dependencies is in the ControllerChainSpec,
+   * containing information about following and preceding controllers. This struct should include
+   * the neighboring controllers with their relationships to the provided controller.
+   * `following_controllers` specify controllers that come after the provided controller.
+   * `preceding_controllers` specify controllers that come before the provided controller.
+   */
+  void update_list_with_controller_chain(
+    const std::string & ctrl_name, std::vector<std::string>::iterator controller_iterator,
+    bool append_to_controller);
+
   void controller_activity_diagnostic_callback(diagnostic_updater::DiagnosticStatusWrapper & stat);
+
+  /**
+   * @brief determine_controller_node_options - A method that retrieves the controller defined node
+   * options and adapts them, based on if there is a params file to be loaded or the use_sim_time
+   * needs to be set
+   * @param controller - controller info
+   * @return The node options that will be set to the controller LifeCycleNode
+   */
+  rclcpp::NodeOptions determine_controller_node_options(const ControllerSpec & controller) const;
+
   diagnostic_updater::Updater diagnostics_updater_;
 
   std::shared_ptr<rclcpp::Executor> executor_;
@@ -424,7 +468,8 @@ private:
      * lists match and returns a reference to it
      * This referenced list can be modified safely until switch_updated_controller_list()
      * is called, at this point the RT thread may start using it at any time
-     * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by rt list
+     * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by
+     * rt list
      */
     std::vector<ControllerSpec> & get_unused_list(
       const std::lock_guard<std::recursive_mutex> & guard);
@@ -432,7 +477,8 @@ private:
     /// get_updated_list Returns a const reference to the most updated list.
     /**
      * \warning May or may not being used by the realtime thread, read-only reference for safety
-     * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by rt list
+     * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by
+     * rt list
      */
     const std::vector<ControllerSpec> & get_updated_list(
       const std::lock_guard<std::recursive_mutex> & guard) const;
@@ -440,7 +486,8 @@ private:
     /**
      * switch_updated_list Switches the "updated" and "outdated" lists, and waits
      *  until the RT thread is using the new "updated" list.
-     * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by rt list
+     * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by
+     * rt list
      */
     void switch_updated_list(const std::lock_guard<std::recursive_mutex> & guard);
 
@@ -468,6 +515,8 @@ private:
   };
 
   RTControllerListWrapper rt_controllers_wrapper_;
+  std::unordered_map<std::string, ControllerChainSpec> controller_chain_spec_;
+  std::vector<std::string> ordered_controllers_names_;
   /// mutex copied from ROS1 Control, protects service callbacks
   /// not needed if we're guaranteed that the callbacks don't come from multiple threads
   std::mutex services_lock_;
@@ -497,6 +546,9 @@ private:
   std::vector<std::string> activate_command_interface_request_,
     deactivate_command_interface_request_;
 
+  std::string robot_description_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_description_subscription_;
+
   struct SwitchParams
   {
     bool do_switch = {false};
@@ -510,6 +562,67 @@ private:
   };
 
   SwitchParams switch_params_;
+
+  class ControllerThreadWrapper
+  {
+  public:
+    ControllerThreadWrapper(
+      std::shared_ptr<controller_interface::ControllerInterfaceBase> & controller,
+      int cm_update_rate)
+    : terminated_(false), controller_(controller), thread_{}, cm_update_rate_(cm_update_rate)
+    {
+    }
+
+    ControllerThreadWrapper(const ControllerThreadWrapper & t) = delete;
+    ControllerThreadWrapper(ControllerThreadWrapper && t) = default;
+    ~ControllerThreadWrapper()
+    {
+      terminated_.store(true, std::memory_order_seq_cst);
+      if (thread_.joinable())
+      {
+        thread_.join();
+      }
+    }
+
+    void activate()
+    {
+      thread_ = std::thread(&ControllerThreadWrapper::call_controller_update, this);
+    }
+
+    void call_controller_update()
+    {
+      using TimePoint = std::chrono::system_clock::time_point;
+      unsigned int used_update_rate =
+        controller_->get_update_rate() == 0
+          ? cm_update_rate_
+          : controller_
+              ->get_update_rate();  // determines if the controller's or CM's update rate is used
+
+      while (!terminated_.load(std::memory_order_relaxed))
+      {
+        auto const period = std::chrono::nanoseconds(1'000'000'000 / used_update_rate);
+        TimePoint next_iteration_time =
+          TimePoint(std::chrono::nanoseconds(controller_->get_node()->now().nanoseconds()));
+
+        if (controller_->get_state().id() == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+        {
+          // critical section, not implemented yet
+        }
+
+        next_iteration_time += period;
+        std::this_thread::sleep_until(next_iteration_time);
+      }
+    }
+
+  private:
+    std::atomic<bool> terminated_;
+    std::shared_ptr<controller_interface::ControllerInterfaceBase> controller_;
+    std::thread thread_;
+    unsigned int cm_update_rate_;
+  };
+
+  std::unordered_map<std::string, std::unique_ptr<ControllerThreadWrapper>>
+    async_controller_threads_;
 };
 
 }  // namespace controller_manager

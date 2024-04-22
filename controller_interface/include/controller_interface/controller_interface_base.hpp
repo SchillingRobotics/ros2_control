@@ -26,6 +26,7 @@
 #include "hardware_interface/loaned_state_interface.hpp"
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/version.h"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 namespace controller_interface
@@ -74,15 +75,13 @@ public:
 
   /// Get configuration for controller's required command interfaces.
   /**
-   * Method used by the controller_manager to get the set of command interfaces used by the controller.
-   * Each controller can use individual method to determine interface names that in simples case
-   * have the following format: `<joint>/<interface>`.
-   * The method is called only in `inactive` or `active` state, i.e., `on_configure` has to be
-   * called first.
-   * The configuration is used to check if controller can be activated and to claim interfaces from
-   * hardware.
-   * The claimed interfaces are populated in the
-   * \ref ControllerInterfaceBase::command_interfaces_ "command_interfaces_" member.
+   * Method used by the controller_manager to get the set of command interfaces used by the
+   * controller. Each controller can use individual method to determine interface names that in
+   * simples case have the following format: `<joint>/<interface>`. The method is called only in
+   * `inactive` or `active` state, i.e., `on_configure` has to be called first. The configuration is
+   * used to check if controller can be activated and to claim interfaces from hardware. The claimed
+   * interfaces are populated in the \ref ControllerInterfaceBase::command_interfaces_
+   * "command_interfaces_" member.
    *
    * \returns configuration of command interfaces.
    */
@@ -115,9 +114,9 @@ public:
   void release_interfaces();
 
   CONTROLLER_INTERFACE_PUBLIC
-  virtual return_type init(
-    const std::string & controller_name, const std::string & namespace_ = "",
-    const rclcpp::NodeOptions & node_options = rclcpp::NodeOptions());
+  return_type init(
+    const std::string & controller_name, const std::string & urdf, unsigned int cm_update_rate,
+    const std::string & node_namespace, const rclcpp::NodeOptions & node_options);
 
   /// Custom configure method to read additional parameters for controller-nodes
   /*
@@ -131,7 +130,8 @@ public:
   virtual CallbackReturn on_init() = 0;
 
   /**
-   * Control step update. Command interfaces are updated based on on reference inputs and current states.
+   * Control step update. Command interfaces are updated based on on reference inputs and current
+   * states.
    * **The method called in the (real-time) control loop.**
    *
    * \param[in] time The time at the start of this control loop iteration
@@ -155,6 +155,33 @@ public:
 
   CONTROLLER_INTERFACE_PUBLIC
   bool is_async() const;
+
+  CONTROLLER_INTERFACE_PUBLIC
+  const std::string & get_robot_description() const;
+
+  /**
+   * Method used by the controller_manager for base NodeOptions to instantiate the Lifecycle node
+   * of the controller upon loading the controller.
+   *
+   * \note The controller_manager will modify these NodeOptions in case a params file is passed
+   * by the spawner to load the controller parameters or when controllers are loaded in simulation
+   * (see ros2_control#1311, ros2_controllers#698 , ros2_controllers#795,ros2_controllers#966 for
+   * more details)
+   *
+   * @returns NodeOptions required for the configuration of the controller lifecycle node
+   */
+  CONTROLLER_INTERFACE_PUBLIC
+  virtual rclcpp::NodeOptions define_custom_node_options() const
+  {
+// \note The versions conditioning is added here to support the source-compatibility with Humble
+#if RCLCPP_VERSION_MAJOR >= 21
+    return rclcpp::NodeOptions().enable_logger_service(true);
+#else
+    return rclcpp::NodeOptions()
+      .allow_undeclared_parameters(true)
+      .automatically_declare_parameters_from_overrides(true);
+#endif
+  }
 
   /// Declare and initialize a parameter with a type.
   /**
@@ -224,6 +251,7 @@ protected:
   std::vector<hardware_interface::LoanedStateInterface> state_interfaces_;
   unsigned int update_rate_ = 0;
   bool is_async_ = false;
+  std::string urdf_ = "";
 
 private:
   std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;

@@ -2,6 +2,121 @@
 Changelog for package controller_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.8.0 (2024-03-27)
+------------------
+* generate version.h file per package using the ament_generate_version_header  (`#1449 <https://github.com/ros-controls/ros2_control/issues/1449>`_)
+* Use ament_cmake generated rclcpp version header (`#1448 <https://github.com/ros-controls/ros2_control/issues/1448>`_)
+* Contributors: Sai Kishor Kothakota
+
+4.7.0 (2024-03-22)
+------------------
+* add missing compiler definitions of RCLCPP_VERSION_MAJOR (`#1440 <https://github.com/ros-controls/ros2_control/issues/1440>`_)
+* Contributors: Sai Kishor Kothakota
+
+4.6.0 (2024-03-02)
+------------------
+* Add -Werror=missing-braces to compile options (`#1423 <https://github.com/ros-controls/ros2_control/issues/1423>`_)
+* added conditioning to have rolling tags compilable in older versions (`#1422 <https://github.com/ros-controls/ros2_control/issues/1422>`_)
+* Contributors: Sai Kishor Kothakota
+
+4.5.0 (2024-02-12)
+------------------
+* A method to get node options to setup the controller node #api-breaking (`#1169 <https://github.com/ros-controls/ros2_control/issues/1169>`_)
+* Contributors: Sai Kishor Kothakota
+
+4.4.0 (2024-01-31)
+------------------
+
+4.3.0 (2024-01-20)
+------------------
+* Issue 695: Changing 'namespace\_' variables to 'node_namespace' to make it more explicit (`#1239 <https://github.com/ros-controls/ros2_control/issues/1239>`_)
+* Contributors: bailaC
+
+4.2.0 (2023-12-12)
+------------------
+
+4.1.0 (2023-11-30)
+------------------
+* Add few warning compiler options to error (`#1181 <https://github.com/ros-controls/ros2_control/issues/1181>`_)
+* [ControllerInterface] Avoid warning about conversion from `int64_t` to `unsigned int` (`#1173 <https://github.com/ros-controls/ros2_control/issues/1173>`_)
+* Contributors: Dr. Denis, Sai Kishor Kothakota
+
+4.0.0 (2023-11-21)
+------------------
+* Pass controller manager update rate on the init of the controller interface  (`#1141 <https://github.com/ros-controls/ros2_control/issues/1141>`_)
+* Pass URDF to controllers on init (`#1088 <https://github.com/ros-controls/ros2_control/issues/1088>`_)
+* Contributors: Bence Magyar, Sai Kishor Kothakota
+
+3.21.0 (2023-11-06)
+-------------------
+
+3.20.0 (2023-10-31)
+-------------------
+
+3.19.1 (2023-10-04)
+-------------------
+
+3.19.0 (2023-10-03)
+-------------------
+* Enable services for setting the log-level in controller per default (`#1102 <https://github.com/ros-controls/ros2_control/issues/1102>`_)
+* Contributors: Dr. Denis
+
+3.18.0 (2023-08-17)
+-------------------
+* add a broadcaster for range sensor (`#1091 <https://github.com/ros-controls/ros2_control/issues/1091>`_)
+* Contributors: flochre
+
+3.17.0 (2023-08-07)
+-------------------
+
+3.16.0 (2023-07-09)
+-------------------
+
+3.15.0 (2023-06-23)
+-------------------
+
+3.14.0 (2023-06-14)
+-------------------
+* Add -Wconversion flag to protect future developments (`#1053 <https://github.com/ros-controls/ros2_control/issues/1053>`_)
+* enable ReflowComments to also use ColumnLimit on comments (`#1037 <https://github.com/ros-controls/ros2_control/issues/1037>`_)
+* Contributors: Sai Kishor Kothakota, gwalck
+
+3.13.0 (2023-05-18)
+-------------------
+
+3.12.2 (2023-04-29)
+-------------------
+
+3.12.1 (2023-04-14)
+-------------------
+* Add missing build_export_depends to controller_interface (`#989 <https://github.com/ros-controls/ros2_control/issues/989>`_)
+* Contributors: Scott K Logan
+
+3.12.0 (2023-04-02)
+-------------------
+* [Controller Interface] Add time and period paramters to update_reference_from_subscribers() (`#846 <https://github.com/ros-controls/ros2_control/issues/846>`_) #API-break
+* Contributors: Robotgir, Denis Štogl
+
+3.11.0 (2023-03-22)
+-------------------
+* [ControllerManager] Add Class for Async Controllers and Lifecycle Management (`#932 <https://github.com/ros-controls/ros2_control/issues/932>`_)
+* Contributors: Márk Szitanics
+
+3.10.0 (2023-03-16)
+-------------------
+
+3.9.1 (2023-03-09)
+------------------
+
+3.9.0 (2023-02-28)
+------------------
+
+3.8.0 (2023-02-10)
+------------------
+* Fix CMake install so overriding works (`#926 <https://github.com/ros-controls/ros2_control/issues/926>`_)
+* Async params (`#927 <https://github.com/ros-controls/ros2_control/issues/927>`_)
+* Contributors: Márk Szitanics, Tyler Weaver
+
 3.7.0 (2023-01-24)
 ------------------
 
